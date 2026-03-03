@@ -42,6 +42,9 @@ SHARED_WORKFLOWS = [
     ("workflows/shared-log-interaction.json", "HvpDRQVudIit6DZX"),
     ("workflows/shared-log-feedback.json", "dMNZniMfBrav5sl7"),
     ("workflows/shared-learning-loop.json", "BEiOsCo3bwVSQnGI"),
+    ("workflows/shared-monthly-reset.json", "znMFanljkEgsstdz"),
+    ("workflows/user-registration.json", "oZZsFAeYA46yK9kZ"),
+    ("workflows/stripe-webhook-handler.json", "he9rhHCvO2nWLyUZ"),
 ]
 
 MAIN_WORKFLOWS = [

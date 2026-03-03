@@ -179,6 +179,35 @@
       "typeVersion": 4.2,
       "position": [1780, 350],
       "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer re_REPLACE_WITH_YOUR_RESEND_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ from: 'FormulateAI <onboarding@formulateai.com>', to: [$json.to], subject: $json.subject, html: $json.html }) }}",
+        "options": {}
+      },
+      "id": "sw-0012",
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 200],
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -192,6 +221,7 @@
     },
     "Register New User": { "main": [[{ "node": "Parse Registration Result", "type": "main", "index": 0 }]] },
     "Parse Registration Result": { "main": [[{ "node": "Build Welcome Email", "type": "main", "index": 0 }]] },
+    "Build Welcome Email": { "main": [[{ "node": "Send Welcome Email", "type": "main", "index": 0 }]] },
     "Is Subscription Cancelled?": {
       "main": [
         [{ "node": "Read All Users", "type": "main", "index": 0 }],

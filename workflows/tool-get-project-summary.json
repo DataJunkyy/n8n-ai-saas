@@ -22,6 +22,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\n// No camelCase aliases needed — spreadsheetId is already camelCase\nreturn [{ json: parsed }];"
+      },
+      "id": "gps-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
         "documentId": {
           "__rl": true,
           "value": "={{ $('Parse Input').first().json.spreadsheetId }}",
@@ -42,7 +55,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        464,
+        520,
         304
       ],
       "credentials": {
@@ -68,6 +81,17 @@
   ],
   "connections": {
     "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
       "main": [
         [
           {

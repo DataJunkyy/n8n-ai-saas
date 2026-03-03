@@ -53,7 +53,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const authData = $('Auth Gate').first().json;\nconst message = authData.message || $('Webhook').first().json.body.message;\nconst spreadsheetId = authData.spreadsheetId || '';\n\nconst learnings = $input.all() || [];\nconst projectName = 'project-assistant';\n\nconst relevantLearnings = learnings.filter(l => {\n  const proj = (l.json.ProjectName || '').toLowerCase();\n  const active = String(l.json.Active || '').toUpperCase();\n  return active === 'TRUE' && (proj === projectName || proj === 'global');\n});\n\nlet learningsSection = '';\nif (relevantLearnings.length > 0) {\n  learningsSection = 'LEARNED BEHAVIORS (from user feedback — always follow these):\\n';\n  for (const l of relevantLearnings) {\n    learningsSection += '- ' + l.json.Learning + '\\n';\n  }\n}\n\nreturn [{ json: { message, learningsSection, spreadsheetId } }];"
+        "jsCode": "const authData = $('Auth Gate').first().json;\nconst message = authData.message || $('Webhook').first().json.body.message;\nconst spreadsheetId = authData.spreadsheetId || '';\n$execution.customData.set('spreadsheetId', spreadsheetId);\n\nconst learnings = $input.all() || [];\nconst projectName = 'project-assistant';\n\nconst relevantLearnings = learnings.filter(l => {\n  const proj = (l.json.ProjectName || '').toLowerCase();\n  const active = String(l.json.Active || '').toUpperCase();\n  return active === 'TRUE' && (proj === projectName || proj === 'global');\n});\n\nlet learningsSection = '';\nif (relevantLearnings.length > 0) {\n  learningsSection = 'LEARNED BEHAVIORS (from user feedback — always follow these):\\n';\n  for (const l of relevantLearnings) {\n    learningsSection += '- ' + l.json.Learning + '\\n';\n  }\n}\n\nreturn [{ json: { message, learningsSection, spreadsheetId } }];"
       },
       "id": "e1000001-0000-0000-0000-000000000021",
       "name": "Enrich Prompt",
@@ -72,7 +72,7 @@
         "options": {
           "maxIterations": 10,
           "returnIntermediateSteps": true,
-          "systemMessage": "=You are a helpful Project Management Assistant. You help manage tasks, create documents, and provide project status summaries.\n\nRESPONSE STYLE:\n- Be concise but thorough\n- Format responses as plain text (no markdown) for smartphone compatibility\n- Use line breaks and simple formatting for readability\n\nAVAILABLE TOOLS:\n- list_tasks: List tasks, optionally filtered by project name\n- manage_task: Create a new task with project, description, status, priority, due date\n- create_document: Create a Google Doc with a title and content\n- get_project_summary: Get a status overview of all projects and tasks\n\n{{ $json.learningsSection || '' }}"
+          "systemMessage": "=You are a helpful Project Management Assistant. You help manage tasks, create documents, and provide project status summaries.\n\nRESPONSE STYLE:\n- Be concise but thorough\n- Format responses as plain text (no markdown) for smartphone compatibility\n- Use line breaks and simple formatting for readability\n\nAVAILABLE TOOLS:\n- list_tasks: List tasks, optionally filtered by project name\n- manage_task: Create a new task with project, description, status, priority, due date\n- create_document: Create a Google Doc with a title and content\n- get_project_summary: Get a status overview of all projects and tasks\n\n{{ $json.learningsSection || '' }}\n\nDATA ACCESS:\nYour user's spreadsheet ID is: {{ $json.spreadsheetId }}\nYou MUST include this spreadsheetId value in EVERY tool call."
         }
       },
       "id": "e1000001-0000-0000-0000-000000000002",
@@ -89,14 +89,14 @@
         "model": {
           "__rl": true,
           "mode": "id",
-          "value": "claude-haiku-4-5-20251001"
+          "value": "claude-sonnet-4-6"
         },
         "options": {
           "maxTokensToSample": 2048
         }
       },
       "id": "e1000001-0000-0000-0000-000000000003",
-      "name": "Claude Haiku",
+      "name": "Claude Sonnet",
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1.3,
       "position": [
@@ -143,7 +143,7 @@
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The user spreadsheet ID from your instructions - pass it exactly as given', 'string') }}"
             }
           }
         }
@@ -187,7 +187,7 @@
             },
             "due_date": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('due_date', 'Due date in YYYY-MM-DD format (optional)', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('dueDate', 'Due date in YYYY-MM-DD format (optional)', 'string') }}"
             },
             "notes": {
               "__rl": false,
@@ -195,7 +195,7 @@
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The user spreadsheet ID from your instructions - pass it exactly as given', 'string') }}"
             }
           }
         }
@@ -231,7 +231,7 @@
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The user spreadsheet ID from your instructions - pass it exactly as given', 'string') }}"
             }
           }
         }
@@ -259,7 +259,7 @@
           "value": {
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The user spreadsheet ID from your instructions - pass it exactly as given', 'string') }}"
             }
           },
           "matchingColumns": [],
@@ -497,7 +497,7 @@
         ]
       ]
     },
-    "Claude Haiku": {
+    "Claude Sonnet": {
       "ai_languageModel": [
         [
           {

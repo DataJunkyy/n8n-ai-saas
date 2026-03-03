@@ -22,6 +22,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\n// Normalize camelCase → snake_case aliases\nif (!parsed.due_date) parsed.due_date = parsed.dueDate || '';\nreturn [{ json: parsed }];"
+      },
+      "id": "mt-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
         "assignments": {
           "assignments": [
             {
@@ -81,7 +94,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        464,
+        520,
         304
       ]
     },
@@ -211,7 +224,7 @@
             {
               "id": "confirm-result",
               "name": "result",
-              "value": "={{ 'Task added: \"' + $('Workflow Input Trigger').first().json.task + '\" in project \"' + $('Workflow Input Trigger').first().json.project + '\" with status \"' + ($('Workflow Input Trigger').first().json.status || 'Todo') + '\".' }}",
+              "value": "={{ 'Task added: \"' + $('Parse Input').first().json.task + '\" in project \"' + $('Parse Input').first().json.project + '\" with status \"' + ($('Parse Input').first().json.status || 'Todo') + '\".' }}",
               "type": "string"
             }
           ]
@@ -230,6 +243,17 @@
   ],
   "connections": {
     "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
       "main": [
         [
           {

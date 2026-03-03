@@ -21,17 +21,30 @@
       }
     },
     {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\n// No camelCase aliases needed — title, content, spreadsheetId are already single words or camelCase\nreturn [{ json: parsed }];"
+      },
+      "id": "cd-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        300
+      ]
+    },
+    {
       "id": "c1b2c3d4-0003-0003-0003-000000000002",
       "name": "Create Google Doc",
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
       "position": [
-        460,
+        520,
         300
       ],
       "parameters": {
         "operation": "create",
-        "title": "={{ $json.title }}",
+        "title": "={{ $('Parse Input').first().json.title }}",
         "folderId": {
           "__rl": true,
           "value": "",
@@ -55,7 +68,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "const docId = $('Create Google Doc').first().json.id;\nconst content = $('Workflow Input Trigger').first().json.content || 'Document created by AI Assistant.';\nconst body = {\n  requests: [{\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  }]\n};\nreturn [{ json: { docId: docId, requestBody: JSON.stringify(body) } }];"
+        "jsCode": "const docId = $('Create Google Doc').first().json.id;\nconst content = $('Parse Input').first().json.content || 'Document created by AI Assistant.';\nconst body = {\n  requests: [{\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  }]\n};\nreturn [{ json: { docId: docId, requestBody: JSON.stringify(body) } }];"
       }
     },
     {
@@ -101,7 +114,7 @@
             {
               "id": "doc-result",
               "name": "result",
-              "value": "={{ 'Document created: \"' + $('Workflow Input Trigger').first().json.title + '\". View it at: https://docs.google.com/document/d/' + $('Create Google Doc').first().json.id }}",
+              "value": "={{ 'Document created: \"' + $('Parse Input').first().json.title + '\". View it at: https://docs.google.com/document/d/' + $('Create Google Doc').first().json.id }}",
               "type": "string"
             }
           ]
@@ -112,6 +125,17 @@
   ],
   "connections": {
     "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
       "main": [
         [
           {

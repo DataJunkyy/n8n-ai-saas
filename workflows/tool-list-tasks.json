@@ -22,6 +22,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\n// No camelCase aliases needed — project and spreadsheetId are already single words\nreturn [{ json: parsed }];"
+      },
+      "id": "lt-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
         "documentId": {
           "__rl": true,
           "value": "={{ $('Parse Input').first().json.spreadsheetId }}",
@@ -43,7 +56,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        464,
+        520,
         304
       ],
       "credentials": {
@@ -55,20 +68,31 @@
     },
     {
       "parameters": {
-        "jsCode": "const trigger = $('Workflow Input Trigger').first().json;\nconst projectFilter = (trigger.project || '').trim();\nconst rows = $input.all();\n\nconst filtered = projectFilter\n  ? rows.filter(r => (r.json.Project || '').toLowerCase() === projectFilter.toLowerCase())\n  : rows;\n\nif (filtered.length === 0) {\n  return [{ json: { result: `No tasks found${projectFilter ? ' for project: ' + projectFilter : ''}.` } }];\n}\n\nconst lines = filtered.map(r => {\n  const t = r.json;\n  return `[${t.Status || 'No Status'}] ${t.Project} — ${t.Task} | Priority: ${t.Priority || '-'} | Due: ${t['Due Date'] || '-'}`;\n});\n\nreturn [{ json: { result: lines.join('\\n') } }];"
+        "jsCode": "const trigger = $('Parse Input').first().json;\nconst projectFilter = (trigger.project || '').trim();\nconst rows = $input.all();\n\nconst filtered = projectFilter\n  ? rows.filter(r => (r.json.Project || '').toLowerCase() === projectFilter.toLowerCase())\n  : rows;\n\nif (filtered.length === 0) {\n  return [{ json: { result: `No tasks found${projectFilter ? ' for project: ' + projectFilter : ''}.` } }];\n}\n\nconst lines = filtered.map(r => {\n  const t = r.json;\n  return `[${t.Status || 'No Status'}] ${t.Project} — ${t.Task} | Priority: ${t.Priority || '-'} | Due: ${t['Due Date'] || '-'}`;\n});\n\nreturn [{ json: { result: lines.join('\\n') } }];"
       },
       "id": "a1b2c3d4-0001-0001-0001-000000000003",
       "name": "Filter and Format Tasks",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        688,
+        740,
         304
       ]
     }
   ],
   "connections": {
     "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
       "main": [
         [
           {

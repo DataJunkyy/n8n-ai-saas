@@ -53,7 +53,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const authData = $('Auth Gate').first().json;\nconst message = authData.message || $('Webhook').first().json.body.message;\nconst spreadsheetId = authData.spreadsheetId || '';\n\nconst learnings = $input.all() || [];\nconst projectName = 'cosmetic-formulator';\n\nconst relevantLearnings = learnings.filter(l => {\n  const proj = (l.json.ProjectName || '').toLowerCase();\n  const active = String(l.json.Active || '').toUpperCase();\n  return active === 'TRUE' && (proj === projectName || proj === 'global');\n});\n\nlet learningsSection = '';\nif (relevantLearnings.length > 0) {\n  learningsSection = 'LEARNED BEHAVIORS (from user feedback — always follow these):\\n';\n  for (const l of relevantLearnings) {\n    learningsSection += '- ' + l.json.Learning + '\\n';\n  }\n}\n\nreturn [{ json: { message, learningsSection, spreadsheetId } }];"
+        "jsCode": "const authData = $('Auth Gate').first().json;\nconst message = authData.message || $('Webhook').first().json.body.message;\nconst spreadsheetId = authData.spreadsheetId || '';\n\n// Store spreadsheetId in execution custom data so toolWorkflow sub-nodes can access it\n$execution.customData.set('spreadsheetId', spreadsheetId);\n\nconst learnings = $input.all() || [];\nconst projectName = 'cosmetic-formulator';\n\nconst relevantLearnings = learnings.filter(l => {\n  const proj = (l.json.ProjectName || '').toLowerCase();\n  const active = String(l.json.Active || '').toUpperCase();\n  return active === 'TRUE' && (proj === projectName || proj === 'global');\n});\n\nlet learningsSection = '';\nif (relevantLearnings.length > 0) {\n  learningsSection = 'LEARNED BEHAVIORS (from user feedback — always follow these):\\n';\n  for (const l of relevantLearnings) {\n    learningsSection += '- ' + l.json.Learning + '\\n';\n  }\n}\n\nreturn [{ json: { message, learningsSection, spreadsheetId } }];"
       },
       "id": "ca-0001-0000-0000-000000000021",
       "name": "Enrich Prompt",
@@ -72,7 +72,7 @@
         "options": {
           "maxIterations": 10,
           "returnIntermediateSteps": true,
-          "systemMessage": "=You are an expert Cosmetic Formulation Assistant. You help create, review, modify, and optimize cosmetic product formulations. You have deep knowledge of cosmetic chemistry, ingredient safety, and regulatory guidelines.\n\nCORE CAPABILITIES:\n- Create new cosmetic formulas (creams, serums, toners, cleansers, masks, lotions, oils, balms, mists)\n- Add ingredients with proper INCI names, percentages, phases, and functions\n- Review formulas for completeness, safety, and balance\n- Suggest ingredients for specific functions\n- Track formula versions and iterations\n\nFORMULATION KNOWLEDGE:\n\nPhase System:\n- Water Phase: Water, hydrosols, water-soluble actives, humectants (glycerin, hyaluronic acid). Heated to ~70-75C.\n- Oil Phase: Carrier oils, butters, oil-soluble actives, emollients. Heated to ~70-75C.\n- Emulsifier Phase: Emulsifying wax, cetearyl alcohol + polysorbate 60, olivem 1000. Added to oil phase or combined at matching temperature.\n- Active Phase: Heat-sensitive actives added below 40C (vitamin C, retinol, niacinamide, peptides).\n- Preservative Phase: Added below 40C. Essential for any formula containing water. Phenoxyethanol (max 1%), Optiphen (1-1.5%), Germall Plus (0.1-0.5%).\n- Fragrance Phase: Essential oils or fragrance oils, added at cool-down below 40C.\n- Cool-Down Phase: Any heat-sensitive ingredients added after the emulsion forms and cools.\n\nStandard Percentage Ranges:\n- Water/hydrosol: typically 60-80% of total formula (to 100% QS)\n- Oils and butters: 5-25% combined\n- Emulsifiers: 2-8% depending on oil phase size\n- Humectants (glycerin, etc.): 2-10%\n- Active ingredients: vary by ingredient, typically 0.5-5%\n- Preservatives: 0.5-1.5%\n- Essential oils/fragrance: 0.5-2% (max 1% for face products)\n- pH adjusters: as needed, typically <1%\n- Thickeners: 0.5-3%\n\npH Guidelines:\n- Skin (general): 4.5-6.5\n- Cleansers: 5.0-6.0\n- Toners: 5.0-5.5\n- Vitamin C serums: 2.5-3.5\n- AHA/BHA products: 3.0-4.0\n- Hair products: 4.5-5.5\n\nSafety Rules (ALWAYS enforce):\n- Total formula MUST equal 100%\n- Never exceed maximum usage rates for any ingredient\n- Every water-containing formula MUST have a preservative\n- Fragrance in leave-on face products: max 1%\n- Retinol: max 1% for OTC, typically 0.25-0.5%\n- Salicylic acid: max 2% OTC\n- Glycolic acid: max 10% OTC (home use)\n- Niacinamide: typically 2-5%, max 10%\n- Vitamin C (L-ascorbic acid): typically 10-20%, max 20%\n- Benzoyl peroxide: max 10% OTC\n- Hydroquinone: max 2% OTC (where permitted)\n\nWHEN CREATING A FORMULA:\n1. First use create_formula to register the formula\n2. Then add ingredients one at a time using manage_ingredient\n3. Add Water phase ingredients first, then Oil, Emulsifier, Active, Preservative, Fragrance\n4. Always include a preservative if the formula contains water\n5. Ensure percentages total 100% (use water as QS - quantity sufficient)\n6. After adding all ingredients, use update_formula to recalculate totals and set status\n\nWHEN REVIEWING A FORMULA:\n1. Use get_formula_details to see the full ingredient list\n2. Check: total = 100%, preservative present, no exceeded max percentages\n3. Check pH compatibility of ingredients\n4. Check phase assignments are correct\n5. Suggest improvements or flag issues\n\nRESPONSE STYLE:\n- Be concise but thorough\n- Always mention safety concerns prominently\n- When suggesting ingredients, provide INCI names\n- Format responses as plain text (no markdown) for smartphone compatibility\n- Use line breaks and simple formatting for readability\n\nAVAILABLE TOOLS:\n- create_formula: Create a new formula record\n- list_formulas: List all formulas, optionally filtered by category or status\n- get_formula_details: Get full formula with all ingredients grouped by phase\n- manage_ingredient: Add an ingredient to a formula\n- update_formula: Update formula metadata (status, pH, notes) and recalculate totals\n- search_ingredients: Search ingredients across all formulas by function, phase, or name\n\n{{ $json.learningsSection || '' }}"
+          "systemMessage": "=You are an expert Cosmetic Formulation Assistant. You help create, review, modify, and optimize cosmetic product formulations. You have deep knowledge of cosmetic chemistry, ingredient safety, and regulatory guidelines.\n\nCORE CAPABILITIES:\n- Create new cosmetic formulas (creams, serums, toners, cleansers, masks, lotions, oils, balms, mists)\n- Add ingredients with proper INCI names, percentages, phases, and functions\n- Review formulas for completeness, safety, and balance\n- Suggest ingredients for specific functions\n- Track formula versions and iterations\n\nFORMULATION KNOWLEDGE:\n\nPhase System:\n- Water Phase: Water, hydrosols, water-soluble actives, humectants (glycerin, hyaluronic acid). Heated to ~70-75C.\n- Oil Phase: Carrier oils, butters, oil-soluble actives, emollients. Heated to ~70-75C.\n- Emulsifier Phase: Emulsifying wax, cetearyl alcohol + polysorbate 60, olivem 1000. Added to oil phase or combined at matching temperature.\n- Active Phase: Heat-sensitive actives added below 40C (vitamin C, retinol, niacinamide, peptides).\n- Preservative Phase: Added below 40C. Essential for any formula containing water. Phenoxyethanol (max 1%), Optiphen (1-1.5%), Germall Plus (0.1-0.5%).\n- Fragrance Phase: Essential oils or fragrance oils, added at cool-down below 40C.\n- Cool-Down Phase: Any heat-sensitive ingredients added after the emulsion forms and cools.\n\nStandard Percentage Ranges:\n- Water/hydrosol: typically 60-80% of total formula (to 100% QS)\n- Oils and butters: 5-25% combined\n- Emulsifiers: 2-8% depending on oil phase size\n- Humectants (glycerin, etc.): 2-10%\n- Active ingredients: vary by ingredient, typically 0.5-5%\n- Preservatives: 0.5-1.5%\n- Essential oils/fragrance: 0.5-2% (max 1% for face products)\n- pH adjusters: as needed, typically <1%\n- Thickeners: 0.5-3%\n\npH Guidelines:\n- Skin (general): 4.5-6.5\n- Cleansers: 5.0-6.0\n- Toners: 5.0-5.5\n- Vitamin C serums: 2.5-3.5\n- AHA/BHA products: 3.0-4.0\n- Hair products: 4.5-5.5\n\nSafety Rules (ALWAYS enforce):\n- Total formula MUST equal 100%\n- Never exceed maximum usage rates for any ingredient\n- Every water-containing formula MUST have a preservative\n- Fragrance in leave-on face products: max 1%\n- Retinol: max 1% for OTC, typically 0.25-0.5%\n- Salicylic acid: max 2% OTC\n- Glycolic acid: max 10% OTC (home use)\n- Niacinamide: typically 2-5%, max 10%\n- Vitamin C (L-ascorbic acid): typically 10-20%, max 20%\n- Benzoyl peroxide: max 10% OTC\n- Hydroquinone: max 2% OTC (where permitted)\n\nWHEN CREATING A FORMULA:\n1. First use create_formula to register the formula\n2. Then add ingredients one at a time using manage_ingredient\n3. Add Water phase ingredients first, then Oil, Emulsifier, Active, Preservative, Fragrance\n4. Always include a preservative if the formula contains water\n5. Ensure percentages total 100% (use water as QS - quantity sufficient)\n6. After adding all ingredients, use update_formula to recalculate totals and set status\n\nWHEN REVIEWING A FORMULA:\n1. Use get_formula_details to see the full ingredient list\n2. Check: total = 100%, preservative present, no exceeded max percentages\n3. Check pH compatibility of ingredients\n4. Check phase assignments are correct\n5. Suggest improvements or flag issues\n\nRESPONSE STYLE:\n- Be concise but thorough\n- Always mention safety concerns prominently\n- When suggesting ingredients, provide INCI names\n- Format responses as plain text (no markdown) for smartphone compatibility\n- Use line breaks and simple formatting for readability\n\nAVAILABLE TOOLS:\n- create_formula: Create a new formula record\n- list_formulas: List all formulas, optionally filtered by category or status\n- get_formula_details: Get full formula with all ingredients grouped by phase\n- manage_ingredient: Add an ingredient to a formula\n- update_formula: Update formula metadata (status, pH, notes) and recalculate totals\n- search_ingredients: Search ingredients across all formulas by function, phase, or name\n\n{{ $json.learningsSection || '' }}\n\nDATA ACCESS:\nYour user's spreadsheet ID is: {{ $json.spreadsheetId }}\nYou MUST include this spreadsheetId value in EVERY tool call."
         }
       },
       "id": "ca-0001-0000-0000-000000000002",
@@ -89,14 +89,14 @@
         "model": {
           "__rl": true,
           "mode": "id",
-          "value": "claude-haiku-4-5-20251001"
+          "value": "claude-sonnet-4-6"
         },
         "options": {
           "maxTokensToSample": 4096
         }
       },
       "id": "ca-0001-0000-0000-000000000003",
-      "name": "Claude Haiku",
+      "name": "Claude Sonnet",
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1.3,
       "position": [
@@ -151,7 +151,7 @@
             },
             "target_ph": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('target_ph', 'Target pH value or range, e.g. 5.5 or 4.5-5.5', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('targetPH', 'Target pH value or range, e.g. 5.5 or 4.5-5.5', 'string') }}"
             },
             "notes": {
               "__rl": false,
@@ -159,7 +159,7 @@
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The spreadsheet ID. Use the exact value from your system prompt under DATA ACCESS.', 'string') }}"
             }
           }
         }
@@ -195,7 +195,7 @@
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The spreadsheet ID. Use the exact value from your system prompt under DATA ACCESS.', 'string') }}"
             }
           }
         }
@@ -223,11 +223,11 @@
           "value": {
             "formula_identifier": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formula_identifier', 'The formula ID or exact name to look up', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formulaId', 'The formula ID or exact name to look up', 'string') }}"
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The spreadsheet ID. Use the exact value from your system prompt under DATA ACCESS.', 'string') }}"
             }
           }
         }
@@ -255,15 +255,15 @@
           "value": {
             "formula_id": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formula_id', 'The formula ID to add the ingredient to', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formulaId', 'The formula ID to add the ingredient to', 'string') }}"
             },
             "ingredient_name": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ingredient_name', 'Common name of the ingredient', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ingredientName', 'Common name of the ingredient', 'string') }}"
             },
             "inci_name": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('inci_name', 'INCI nomenclature name', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('inciName', 'INCI nomenclature name', 'string') }}"
             },
             "percentage": {
               "__rl": false,
@@ -279,15 +279,15 @@
             },
             "max_pct": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('max_pct', 'Maximum recommended usage percentage (optional)', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('maxPct', 'Maximum recommended usage percentage (optional)', 'string') }}"
             },
             "supplier_notes": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('supplier_notes', 'Supplier info and notes (optional)', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('supplierNotes', 'Supplier info and notes (optional)', 'string') }}"
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The spreadsheet ID. Use the exact value from your system prompt under DATA ACCESS.', 'string') }}"
             }
           }
         }
@@ -315,7 +315,7 @@
           "value": {
             "formula_id": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formula_id', 'The formula ID to update', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formulaId', 'The formula ID to update', 'string') }}"
             },
             "field": {
               "__rl": false,
@@ -327,7 +327,7 @@
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The spreadsheet ID. Use the exact value from your system prompt under DATA ACCESS.', 'string') }}"
             }
           }
         }
@@ -355,15 +355,15 @@
           "value": {
             "search_by": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('search_by', 'What to search by: function, phase, or name', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchBy', 'What to search by: function, phase, or name', 'string') }}"
             },
             "search_term": {
               "__rl": false,
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('search_term', 'The search term to match', 'string') }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('searchTerm', 'The search term to match', 'string') }}"
             },
             "spreadsheetId": {
               "__rl": false,
-              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spreadsheetId', 'The spreadsheet ID. Use the exact value from your system prompt under DATA ACCESS.', 'string') }}"
             }
           }
         }
@@ -597,7 +597,7 @@
         ]
       ]
     },
-    "Claude Haiku": {
+    "Claude Sonnet": {
       "ai_languageModel": [
         [
           {
