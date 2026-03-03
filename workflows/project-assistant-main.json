@@ -1,0 +1,634 @@
+{
+  "name": "Project Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "project-assistant",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "104e6108-acae-409e-bc27-77c5a1b174f6"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Learnings",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "e1000001-0000-0000-0000-000000000020",
+      "name": "Read Learnings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const authData = $('Auth Gate').first().json;\nconst message = authData.message || $('Webhook').first().json.body.message;\nconst spreadsheetId = authData.spreadsheetId || '';\n\nconst learnings = $input.all() || [];\nconst projectName = 'project-assistant';\n\nconst relevantLearnings = learnings.filter(l => {\n  const proj = (l.json.ProjectName || '').toLowerCase();\n  const active = String(l.json.Active || '').toUpperCase();\n  return active === 'TRUE' && (proj === projectName || proj === 'global');\n});\n\nlet learningsSection = '';\nif (relevantLearnings.length > 0) {\n  learningsSection = 'LEARNED BEHAVIORS (from user feedback — always follow these):\\n';\n  for (const l of relevantLearnings) {\n    learningsSection += '- ' + l.json.Learning + '\\n';\n  }\n}\n\nreturn [{ json: { message, learningsSection, spreadsheetId } }];"
+      },
+      "id": "e1000001-0000-0000-0000-000000000021",
+      "name": "Enrich Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "maxIterations": 10,
+          "returnIntermediateSteps": true,
+          "systemMessage": "=You are a helpful Project Management Assistant. You help manage tasks, create documents, and provide project status summaries.\n\nRESPONSE STYLE:\n- Be concise but thorough\n- Format responses as plain text (no markdown) for smartphone compatibility\n- Use line breaks and simple formatting for readability\n\nAVAILABLE TOOLS:\n- list_tasks: List tasks, optionally filtered by project name\n- manage_task: Create a new task with project, description, status, priority, due date\n- create_document: Create a Google Doc with a title and content\n- get_project_summary: Get a status overview of all projects and tasks\n\n{{ $json.learningsSection || '' }}"
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000002",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        840,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-haiku-4-5-20251001"
+        },
+        "options": {
+          "maxTokensToSample": 2048
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000003",
+      "name": "Claude Haiku",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        712,
+        512
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "WsdnsArOUZJ9ssTS",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "iphone-main",
+        "contextWindowLength": 10,
+        "sessionIdType": "customKey"
+      },
+      "id": "e1000001-0000-0000-0000-000000000004",
+      "name": "Session Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        808,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "name": "list_tasks",
+        "description": "List tasks from the project tracker Google Sheet. Optionally filter by project name. Returns a formatted list of tasks with their status, priority, and due date.",
+        "workflowId": {
+          "__rl": true,
+          "value": "4xaQjKujons3MWh6",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "project": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('project', 'The project name to filter by (optional). Leave empty to list all tasks.', 'string') }}"
+            },
+            "spreadsheetId": {
+              "__rl": false,
+              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+            }
+          }
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000005",
+      "name": "Tool: list_tasks",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        968,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "name": "manage_task",
+        "description": "Create or add a new task to the project tracker Google Sheet. Provide all task details: project name, task description, status (Todo/In Progress/Done/Blocked), priority (Low/Medium/High), due date (YYYY-MM-DD format), and optional notes.",
+        "workflowId": {
+          "__rl": true,
+          "value": "h29Xr3Uem0tbFuxT",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "project": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('project', 'The project name this task belongs to', 'string') }}"
+            },
+            "task": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('task', 'A clear description of the task', 'string') }}"
+            },
+            "status": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', 'Task status: Todo, In Progress, Done, or Blocked', 'string') }}"
+            },
+            "priority": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('priority', 'Task priority: Low, Medium, or High', 'string') }}"
+            },
+            "due_date": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('due_date', 'Due date in YYYY-MM-DD format (optional)', 'string') }}"
+            },
+            "notes": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('notes', 'Any additional notes or context for this task (optional)', 'string') }}"
+            },
+            "spreadsheetId": {
+              "__rl": false,
+              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+            }
+          }
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000006",
+      "name": "Tool: manage_task",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1112,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "name": "create_document",
+        "description": "Create a new Google Doc with a given title and content. Use this when the user asks to draft a report, summary, email, or any other document. Returns the document URL when done.",
+        "workflowId": {
+          "__rl": true,
+          "value": "xTl4aCH8EQfUMnfF",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('title', 'The title of the Google Doc to create', 'string') }}"
+            },
+            "content": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('content', 'The full text content to write into the document', 'string') }}"
+            },
+            "spreadsheetId": {
+              "__rl": false,
+              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+            }
+          }
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000007",
+      "name": "Tool: create_document",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1272,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_project_summary",
+        "description": "Get a status summary of all projects and tasks from the Google Sheet, grouped by project and broken down by task status. Use this when the user asks for an overview, status report, or summary of all projects.",
+        "workflowId": {
+          "__rl": true,
+          "value": "21EaXJbz7s7JJMA3",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "spreadsheetId": {
+              "__rl": false,
+              "value": "={{ $('Enrich Prompt').first().json.spreadsheetId }}"
+            }
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000008",
+      "name": "Tool: get_project_summary",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1480,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $json.output || '';\nconst steps = $json.intermediateSteps || [];\n\nlet toolsUsed = [];\nlet traceLines = [];\n\nfor (let i = 0; i < steps.length; i++) {\n  const step = steps[i];\n  const action = step.action || {};\n  const toolName = action.tool || 'unknown';\n  const toolInput = action.toolInput || {};\n  const observation = (step.observation || '').substring(0, 500);\n  const reasoning = (action.log || '').trim();\n\n  toolsUsed.push(toolName);\n  traceLines.push('Step ' + (i + 1) + ': Called ' + toolName);\n  if (reasoning) traceLines.push('  Reasoning: ' + reasoning.substring(0, 200));\n  const inputStr = typeof toolInput === 'string'\n    ? toolInput\n    : Object.entries(toolInput).map(([k,v]) => k + '=' + v).join(', ');\n  if (inputStr) traceLines.push('  Input: ' + inputStr);\n  traceLines.push('  Result: ' + observation);\n  traceLines.push('');\n}\n\nconst decisionTrace = traceLines.length > 0\n  ? traceLines.join('\\n')\n  : 'No tools were called for this response.';\nconst toolsList = [...new Set(toolsUsed)].join(', ');\n\nconst responseBody = JSON.stringify({ output, decisionTrace, toolsUsed: toolsList });\n\nreturn [{ json: { output, decisionTrace, toolsUsed: toolsList, responseBody } }];"
+      },
+      "id": "e1000001-0000-0000-0000-000000000030",
+      "name": "Format Decision Trace",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.responseBody }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e1000001-0000-0000-0000-000000000009",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Users",
+          "mode": "name"
+        },
+        "options": {},
+        "returnAll": true
+      },
+      "id": "bb18762e408b409fb1e3b19932aced4b",
+      "name": "Lookup User",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        300,
+        304
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookData = $('Webhook').first().json;\nconst token = (webhookData.headers || {})['x-auth-token'] || '';\n\n// Reject missing or empty token immediately\nif (!token) {\n  return [{ json: { authorized: false, error: 'Unauthorized' } }];\n}\n\nconst users = $input.all();\n\n// No matching user found\nif (!users || users.length === 0 || !users[0].json.AuthToken) {\n  return [{ json: { authorized: false, error: 'Unauthorized' } }];\n}\n\n// Verify token actually matches (filter may return all rows on empty lookup)\nconst userIdx = users.findIndex(u => u.json.AuthToken === token);\nif (userIdx === -1) {\n  return [{ json: { authorized: false, error: 'Unauthorized' } }];\n}\n\nconst u = users[userIdx].json;\nconst userRowNumber = userIdx + 2;\n\n// Check if user is active\nif (String(u.Active || '').toUpperCase() !== 'TRUE') {\n  return [{ json: { authorized: false, error: 'Account inactive' } }];\n}\n\n// Check usage limit\nconst used = parseInt(u.ConversationsThisMonth || '0', 10);\nconst limit = parseInt(u.ConversationsLimit || '100', 10);\nif (used >= limit) {\n  return [{ json: { authorized: false, error: 'Monthly conversation limit reached (' + limit + '). Resets next month.' } }];\n}\n\n// User is authorized — pass through their config\nreturn [{ json: {\n  authorized: true,\n  spreadsheetId: u.SpreadsheetId || '1FLuoMIZiP-fF_p--9uNhp5b6bRaBIS3QmLHuOU0SSHY',\n  email: u.Email || '',\n  plan: u.Plan || 'basic',\n  conversationsUsed: used,\n  conversationsLimit: limit,\n  userRowNumber: userRowNumber,\n  message: webhookData.body.message,\n  sessionId: webhookData.body.sessionId || ''\n}}];"
+      },
+      "id": "517c8dbb4af04647a02bc43e8deddc7f",
+      "name": "Auth Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "auth-gate-check",
+              "leftValue": "={{ $json.authorized }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "c399e4148a2a49b39ef5a33318f70c7c",
+      "name": "Check Auth",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ output: $json.error || 'Unauthorized', decisionTrace: '', toolsUsed: '' }) }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "4f41baaf78eb4a8d9ec4407401028a7c",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        504
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Increment usage counter for the authenticated user\nconst authData = $('Auth Gate').first().json;\nconst rowNum = authData.userRowNumber || 0;\nconst newCount = (authData.conversationsUsed || 0) + 1;\n\nif (!rowNum) {\n  return [{ json: { incremented: false } }];\n}\n\nreturn [{ json: {\n  incremented: true,\n  rowNumber: rowNum,\n  newCount: newCount\n}}];"
+      },
+      "id": "e6e7dad8f0f1452e9369aeef2d597ee1",
+      "name": "Increment Usage",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1460,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI/values/Users!F' + $json.rowNumber + '?valueInputOption=RAW' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ values: [[String($json.newCount)]] }) }}",
+        "options": {}
+      },
+      "id": "pa-usage-update-001",
+      "name": "Update Usage Counter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 304],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Lookup User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Learnings": {
+      "main": [
+        [
+          {
+            "node": "Enrich Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Decision Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Decision Trace": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Haiku": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Session Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: list_tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: manage_task": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: create_document": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: get_project_summary": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup User": {
+      "main": [
+        [
+          {
+            "node": "Auth Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth": {
+      "main": [
+        [
+          {
+            "node": "Read Learnings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Increment Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Usage": {
+      "main": [
+        [
+          {
+            "node": "Update Usage Counter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

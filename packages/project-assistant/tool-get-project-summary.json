@@ -1,0 +1,152 @@
+{
+  "updatedAt": "2026-02-28T06:14:16.128Z",
+  "createdAt": "2026-02-27T22:08:58.499Z",
+  "id": "21EaXJbz7s7JJMA3",
+  "name": "Tool: Get Project Summary",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PROJECT_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Tasks",
+          "mode": "name",
+          "cachedResultName": "Tasks"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000002",
+      "name": "Read Tasks Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        464,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nif (rows.length === 0) {\n  return [{ json: { result: 'No tasks found in the tracker.' } }];\n}\n\n// Group by project, then count by status\nconst projects = {};\nfor (const row of rows) {\n  const t = row.json;\n  const project = t.Project || 'Uncategorized';\n  const status = t.Status || 'No Status';\n  if (!projects[project]) projects[project] = {};\n  projects[project][status] = (projects[project][status] || 0) + 1;\n}\n\n// Build summary text\nconst lines = ['=== Project Summary ==='];\nfor (const [project, statuses] of Object.entries(projects)) {\n  const total = Object.values(statuses).reduce((a, b) => a + b, 0);\n  lines.push(`\\n📁 ${project} (${total} task${total !== 1 ? 's' : ''})`);\n  for (const [status, count] of Object.entries(statuses)) {\n    lines.push(`   • ${status}: ${count}`);\n  }\n}\n\nconst totalAll = rows.length;\nlines.push(`\\nTotal: ${totalAll} task${totalAll !== 1 ? 's' : ''} across ${Object.keys(projects).length} project${Object.keys(projects).length !== 1 ? 's' : ''}`);\n\nreturn [{ json: { result: lines.join('\\n') } }];"
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000003",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Tasks Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Tasks Sheet": {
+      "main": [
+        [
+          {
+            "node": "Build Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "aab7756e-6cd3-444b-8ad3-13c10fa60586",
+  "activeVersionId": null,
+  "versionCounter": 5,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-27T22:08:58.501Z",
+      "createdAt": "2026-02-27T22:08:58.501Z",
+      "role": "workflow:owner",
+      "workflowId": "21EaXJbz7s7JJMA3",
+      "projectId": "e4MnDLqsMYyMu9Kg",
+      "project": {
+        "updatedAt": "2025-04-04T04:41:55.416Z",
+        "createdAt": "2025-04-04T04:41:52.979Z",
+        "id": "e4MnDLqsMYyMu9Kg",
+        "name": "PRINCE ADARKWAH <padarkwah@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "projectRelations": [
+          {
+            "updatedAt": "2025-04-04T04:41:52.979Z",
+            "createdAt": "2025-04-04T04:41:52.979Z",
+            "userId": "d6667488-c5a1-46b3-bb76-7cfa36615eea",
+            "projectId": "e4MnDLqsMYyMu9Kg",
+            "user": {
+              "updatedAt": "2026-02-28T06:14:33.892Z",
+              "createdAt": "2025-04-04T04:41:51.125Z",
+              "id": "d6667488-c5a1-46b3-bb76-7cfa36615eea",
+              "email": "padarkwah@gmail.com",
+              "firstName": "PRINCE",
+              "lastName": "ADARKWAH",
+              "personalizationAnswers": null,
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "xTl4aCH8EQfUMnfF",
+                "userActivatedAt": 1772259271034
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-28",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

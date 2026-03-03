@@ -1,0 +1,372 @@
+{
+  "name": "Tool: Update Formula [DEV]",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "uf-0001-0000-0000-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\nreturn [{ json: parsed }];"
+      },
+      "id": "uf-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1cLv6rS_YjlTGVGrrpWFt7TMz4el1SOsYwlDmzwOwKXI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Formulas",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "uf-0001-0000-0000-000000000002",
+      "name": "Read Formulas Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        530,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1cLv6rS_YjlTGVGrrpWFt7TMz4el1SOsYwlDmzwOwKXI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Ingredients",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "uf-0001-0000-0000-000000000003",
+      "name": "Read Ingredients Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        530,
+        420
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "uf-0001-0000-0000-000000000020",
+      "name": "Wait For Both Reads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        750,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Parse Input').first().json;\nconst formulas = $('Read Formulas Sheet').all();\nlet ingredients = [];\ntry { ingredients = $('Read Ingredients Sheet').all(); } catch(e) { ingredients = []; }\n\nconst formula = formulas.find(r => String(r.json.FormulaID) === String(input.formula_id));\nif (!formula) {\n  return [{ json: { FormulaID: 'NOT_FOUND', result: `Formula not found with ID: ${input.formula_id}` } }];\n}\n\nconst formulaIngredients = ingredients.filter(r => String(r.json.FormulaID) === String(input.formula_id));\nconst totalPct = formulaIngredients.reduce((sum, r) => sum + parseFloat(r.json.Percentage || 0), 0);\n\nconst updated = { ...formula.json };\nconst field = (input.field || '').trim();\nconst value = (input.value || '').trim();\n\nif (field && value) {\n  const fieldMap = {\n    'status': 'Status', 'targetph': 'TargetPH', 'notes': 'Notes', 'name': 'Name',\n    'category': 'Category', 'description': 'Description'\n  };\n  const mappedField = fieldMap[field.toLowerCase()];\n  if (mappedField) {\n    updated[mappedField] = value;\n  }\n}\n\nupdated.TotalPct = totalPct.toFixed(1);\nupdated.UpdatedAt = new Date().toISOString().split('T')[0];\n\n// Remove row_number if present (from read operation)\ndelete updated.row_number;\n\nreturn [{ json: updated }];"
+      },
+      "id": "uf-0001-0000-0000-000000000004",
+      "name": "Build Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        970,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1cLv6rS_YjlTGVGrrpWFt7TMz4el1SOsYwlDmzwOwKXI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Formulas",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "FormulaID"
+          ],
+          "schema": [
+            {
+              "id": "FormulaID",
+              "displayName": "FormulaID",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TargetPH",
+              "displayName": "TargetPH",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TotalPct",
+              "displayName": "TotalPct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CreatedAt",
+              "displayName": "CreatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "UpdatedAt",
+              "displayName": "UpdatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "uf-0001-0000-0000-000000000005",
+      "name": "Update Formulas Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1190,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "update-result",
+              "name": "result",
+              "value": "={{ 'Formula \"' + $('Build Update').first().json.Name + '\" updated. Total: ' + $('Build Update').first().json.TotalPct + '%. Status: ' + $('Build Update').first().json.Status + '.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "uf-0001-0000-0000-000000000006",
+      "name": "Return Confirmation",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1410,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Read Formulas Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Ingredients Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Formulas Sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait For Both Reads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Ingredients Sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait For Both Reads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait For Both Reads": {
+      "main": [
+        [
+          {
+            "node": "Build Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Update": {
+      "main": [
+        [
+          {
+            "node": "Update Formulas Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Formulas Sheet": {
+      "main": [
+        [
+          {
+            "node": "Return Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

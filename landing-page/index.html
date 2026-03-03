@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistants by FormulateAI — Cosmetic Formulation & Project Management</title>
+  <meta name="description" content="AI-powered assistants for cosmetic formulation and project management. Chat with your data, track formulas, manage tasks — all from your phone.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root {
+      --pico-font-size: 16px;
+      --brand: #6366f1;
+      --brand-light: #818cf8;
+    }
+    .hero {
+      text-align: center;
+      padding: 4rem 0 2rem;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--pico-muted-color);
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--brand);
+      color: #fff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .products {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+    @media (max-width: 768px) {
+      .products { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.8rem; }
+    }
+    .product-card {
+      border: 2px solid var(--pico-muted-border-color);
+      border-radius: 1rem;
+      padding: 2rem;
+      text-align: center;
+    }
+    .product-card h3 { margin-top: 0; }
+    .product-card .icon { font-size: 3rem; margin-bottom: 0.5rem; }
+    .product-card ul {
+      text-align: left;
+      padding-left: 1.5rem;
+    }
+    .product-card ul li {
+      margin-bottom: 0.5rem;
+    }
+    .price {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--brand);
+      margin: 1rem 0 0.25rem;
+    }
+    .price-sub {
+      color: var(--pico-muted-color);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: var(--brand);
+      color: #fff;
+      padding: 0.75rem 2rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+    .cta-btn:hover {
+      background: var(--brand-light);
+      color: #fff;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin: 3rem 0;
+    }
+    @media (max-width: 768px) {
+      .features { grid-template-columns: 1fr; }
+    }
+    .feature {
+      text-align: center;
+      padding: 1.5rem;
+    }
+    .feature .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .feature h4 { margin: 0.5rem 0; }
+    .feature p { color: var(--pico-muted-color); font-size: 0.9rem; }
+    section { padding: 2rem 0; }
+    .section-title {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .faq details {
+      margin-bottom: 1rem;
+    }
+    .bottom-cta {
+      text-align: center;
+      padding: 3rem 0;
+      background: var(--pico-card-background-color);
+      border-radius: 1rem;
+      margin: 2rem 0;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      color: var(--pico-muted-color);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <span class="badge">AI-Powered</span>
+      <h1>Your AI Assistants, Always On</h1>
+      <p>Chat-based AI tools for cosmetic formulators and project managers. Works on any device — just open and talk.</p>
+      <a href="#pricing" class="cta-btn">See Pricing</a>
+    </div>
+
+    <!-- How It Works -->
+    <section>
+      <h2 class="section-title">How It Works</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="icon">1</div>
+          <h4>Subscribe</h4>
+          <p>Pick your AI assistant and start your subscription. Setup takes under 2 minutes.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">2</div>
+          <h4>Open & Chat</h4>
+          <p>Access your assistant from any browser or phone. No app install needed.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">3</div>
+          <h4>Get Things Done</h4>
+          <p>Create formulas, manage tasks, track progress — all through natural conversation.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section>
+      <h2 class="section-title">Why Choose Our AI Assistants?</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="icon">&#9889;</div>
+          <h4>Instant Responses</h4>
+          <p>Powered by Claude AI. Get intelligent answers and actions in seconds.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">&#128241;</div>
+          <h4>Works on Phone</h4>
+          <p>Fully mobile-friendly chat interface. Use it from anywhere.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">&#128274;</div>
+          <h4>Your Data, Private</h4>
+          <p>Each user gets their own private spreadsheet. No data sharing between accounts.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">&#128640;</div>
+          <h4>Always Improving</h4>
+          <p>Built-in learning loop. The assistant gets smarter from your feedback.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">&#128202;</div>
+          <h4>Full Traceability</h4>
+          <p>See which tools the AI used and why. Every decision is transparent.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">&#127919;</div>
+          <h4>100 Conversations/mo</h4>
+          <p>Generous limits for everyday use. Need more? Reach out for custom plans.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing / Products -->
+    <section id="pricing">
+      <h2 class="section-title">Choose Your AI Assistant</h2>
+      <div class="products">
+
+        <!-- Cosmetic Formulation -->
+        <div class="product-card">
+          <div class="icon">&#129514;</div>
+          <h3>Cosmetic Formulation AI</h3>
+          <p>Your personal cosmetic chemist assistant.</p>
+          <ul>
+            <li>Create and manage formulas</li>
+            <li>Track ingredients with INCI names</li>
+            <li>Calculate percentages and phases</li>
+            <li>Version history for every formula</li>
+            <li>Search ingredient database</li>
+            <li>Export-ready Google Sheets data</li>
+          </ul>
+          <div class="price">$9.99</div>
+          <div class="price-sub">per month &middot; cancel anytime</div>
+          <!-- Replace href with your Stripe Payment Link -->
+          <a href="#subscribe-cosmetic" class="cta-btn" data-product="cosmetic">Subscribe Now</a>
+        </div>
+
+        <!-- Project Management -->
+        <div class="product-card">
+          <div class="icon">&#128203;</div>
+          <h3>Project Management AI</h3>
+          <p>Your personal project management assistant.</p>
+          <ul>
+            <li>Create and track tasks</li>
+            <li>Set priorities, due dates, assignments</li>
+            <li>Generate project documents (Google Docs)</li>
+            <li>Get project summaries and status</li>
+            <li>Natural language task management</li>
+            <li>Export-ready Google Sheets data</li>
+          </ul>
+          <div class="price">$9.99</div>
+          <div class="price-sub">per month &middot; cancel anytime</div>
+          <!-- Replace href with your Stripe Payment Link -->
+          <a href="#subscribe-project" class="cta-btn" data-product="project">Subscribe Now</a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq">
+      <h2 class="section-title">Frequently Asked Questions</h2>
+
+      <details>
+        <summary>How do I access my AI assistant?</summary>
+        <p>After subscribing, you'll receive a unique access link and auth token. Open the link in any browser (desktop or mobile) and start chatting. No app install required.</p>
+      </details>
+
+      <details>
+        <summary>Where is my data stored?</summary>
+        <p>Your data is stored in a private Google Spreadsheet created just for you. You have full access to view and export your data at any time.</p>
+      </details>
+
+      <details>
+        <summary>What counts as a "conversation"?</summary>
+        <p>Each message you send to the assistant counts as one conversation. You get 100 per month, which resets on the 1st of each month.</p>
+      </details>
+
+      <details>
+        <summary>Can I cancel anytime?</summary>
+        <p>Yes. Cancel through your payment portal at any time. Your data remains accessible in your Google Spreadsheet even after cancellation.</p>
+      </details>
+
+      <details>
+        <summary>Is my data shared with other users?</summary>
+        <p>No. Each subscriber gets their own isolated spreadsheet. Your formulas, tasks, and conversations are completely private.</p>
+      </details>
+
+      <details>
+        <summary>What AI model powers this?</summary>
+        <p>Our assistants are powered by Anthropic's Claude AI, known for being helpful, harmless, and honest. We use specialized tool-calling to interact with your data accurately.</p>
+      </details>
+    </section>
+
+    <!-- Bottom CTA -->
+    <div class="bottom-cta">
+      <h2>Ready to get started?</h2>
+      <p>Pick your AI assistant and start being more productive today.</p>
+      <a href="#pricing" class="cta-btn">Choose Your Plan</a>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 FormulateAI. All rights reserved.</p>
+      <p>Questions? Email <a href="mailto:support@formulateai.com">support@formulateai.com</a></p>
+    </div>
+  </footer>
+
+</body>
+</html>

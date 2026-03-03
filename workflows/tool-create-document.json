@@ -1,0 +1,218 @@
+{
+  "updatedAt": "2026-02-28T06:13:33.205Z",
+  "createdAt": "2026-02-27T22:08:58.091Z",
+  "id": "xTl4aCH8EQfUMnfF",
+  "name": "Tool: Create Document",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "c1b2c3d4-0003-0003-0003-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "c1b2c3d4-0003-0003-0003-000000000002",
+      "name": "Create Google Doc",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "operation": "create",
+        "title": "={{ $json.title }}",
+        "folderId": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        }
+      },
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "lEnWoDkNdZXZ3iv2",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "id": "c1b2c3d4-0003-0003-0003-000000000099",
+      "name": "Build Request Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const docId = $('Create Google Doc').first().json.id;\nconst content = $('Workflow Input Trigger').first().json.content || 'Document created by AI Assistant.';\nconst body = {\n  requests: [{\n    insertText: {\n      location: { index: 1 },\n      text: content\n    }\n  }]\n};\nreturn [{ json: { docId: docId, requestBody: JSON.stringify(body) } }];"
+      }
+    },
+    {
+      "id": "c1b2c3d4-0003-0003-0003-000000000003",
+      "name": "Write Content to Doc",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://docs.googleapis.com/v1/documents/' + $json.docId + ':batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDocsOAuth2Api",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "lEnWoDkNdZXZ3iv2",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "id": "c1b2c3d4-0003-0003-0003-000000000004",
+      "name": "Return Doc Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "doc-result",
+              "name": "result",
+              "value": "={{ 'Document created: \"' + $('Workflow Input Trigger').first().json.title + '\". View it at: https://docs.google.com/document/d/' + $('Create Google Doc').first().json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Build Request Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Content to Doc": {
+      "main": [
+        [
+          {
+            "node": "Return Doc Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Request Body": {
+      "main": [
+        [
+          {
+            "node": "Write Content to Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "61b918ac-6d72-44e6-8387-236bc139f97d",
+  "activeVersionId": null,
+  "versionCounter": 7,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-27T22:08:58.093Z",
+      "createdAt": "2026-02-27T22:08:58.093Z",
+      "role": "workflow:owner",
+      "workflowId": "xTl4aCH8EQfUMnfF",
+      "projectId": "e4MnDLqsMYyMu9Kg",
+      "project": {
+        "updatedAt": "2025-04-04T04:41:55.416Z",
+        "createdAt": "2025-04-04T04:41:52.979Z",
+        "id": "e4MnDLqsMYyMu9Kg",
+        "name": "PRINCE ADARKWAH <padarkwah@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "projectRelations": [
+          {
+            "updatedAt": "2025-04-04T04:41:52.979Z",
+            "createdAt": "2025-04-04T04:41:52.979Z",
+            "userId": "d6667488-c5a1-46b3-bb76-7cfa36615eea",
+            "projectId": "e4MnDLqsMYyMu9Kg",
+            "user": {
+              "updatedAt": "2026-02-28T06:14:33.892Z",
+              "createdAt": "2025-04-04T04:41:51.125Z",
+              "id": "d6667488-c5a1-46b3-bb76-7cfa36615eea",
+              "email": "padarkwah@gmail.com",
+              "firstName": "PRINCE",
+              "lastName": "ADARKWAH",
+              "personalizationAnswers": null,
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "xTl4aCH8EQfUMnfF",
+                "userActivatedAt": 1772259271034
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-28",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

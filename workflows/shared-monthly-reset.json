@@ -1,0 +1,112 @@
+{
+  "name": "Shared: Monthly Usage Reset",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "monthsInterval": 1,
+              "triggerAtDayOfMonth": 1,
+              "triggerAtHour": 0,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "mur-0001",
+      "name": "Monthly Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "value": "1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Users", "mode": "name" },
+        "options": {},
+        "returnAll": true
+      },
+      "id": "mur-0002",
+      "name": "Read All Users",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [460, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const users = $input.all();\n\nif (!users || users.length === 0) {\n  return [{ json: { message: 'No users found', resetCount: 0 } }];\n}\n\n// Build batch update: reset ConversationsThisMonth (column F) for all active users\nconst updates = [];\nlet resetCount = 0;\n\nfor (let i = 0; i < users.length; i++) {\n  const user = users[i].json;\n  const rowNumber = i + 2; // +2 for header row + 0-index offset\n  \n  if (String(user.Active || '').toUpperCase() === 'TRUE') {\n    updates.push({\n      range: `Users!F${rowNumber}`,\n      values: [['0']]\n    });\n    resetCount++;\n  }\n}\n\nreturn [{ json: {\n  updates,\n  resetCount,\n  totalUsers: users.length,\n  message: `Prepared reset for ${resetCount} active users out of ${users.length} total`\n} }];"
+      },
+      "id": "mur-0003",
+      "name": "Build Reset Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "has-updates",
+              "leftValue": "={{ $json.resetCount }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "mur-0004",
+      "name": "Has Active Users?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI/values:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ valueInputOption: 'RAW', data: $json.updates }) }}",
+        "options": {}
+      },
+      "id": "mur-0005",
+      "name": "Reset Usage Counters",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resetData = $('Build Reset Data').first().json;\nconst batchResult = $input.first().json;\n\nreturn [{ json: {\n  success: true,\n  resetCount: resetData.resetCount,\n  totalUsers: resetData.totalUsers,\n  batchResponse: batchResult.totalUpdatedCells || 'completed',\n  timestamp: new Date().toISOString()\n} }];"
+      },
+      "id": "mur-0006",
+      "name": "Log Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Monthly Schedule": { "main": [[{ "node": "Read All Users", "type": "main", "index": 0 }]] },
+    "Read All Users": { "main": [[{ "node": "Build Reset Data", "type": "main", "index": 0 }]] },
+    "Build Reset Data": { "main": [[{ "node": "Has Active Users?", "type": "main", "index": 0 }]] },
+    "Has Active Users?": {
+      "main": [
+        [{ "node": "Reset Usage Counters", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Reset Usage Counters": { "main": [[{ "node": "Log Result", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

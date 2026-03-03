@@ -1,0 +1,22 @@
+# Claude Code
+.claude/
+
+# Editor
+.vscode/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Environment / secrets
+.env
+*.key
+*.pem
+credentials.json
+
+# Generated / temp
+*.tmp
+__pycache__/
+node_modules/
+tools/migration-id-map.json

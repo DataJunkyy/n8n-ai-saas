@@ -1,0 +1,186 @@
+{
+  "name": "Tool: Search Ingredients",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "si-0001-0000-0000-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\nreturn [{ json: parsed }];"
+      },
+      "id": "si-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PROJECT_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Formulas",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "si-0001-0000-0000-000000000002",
+      "name": "Read Formulas Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        530,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PROJECT_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Ingredients",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "si-0001-0000-0000-000000000003",
+      "name": "Read Ingredients Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        530,
+        420
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "si-0001-0000-0000-000000000020",
+      "name": "Wait For Both Reads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        750,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Parse Input').first().json;\nconst formulas = $('Read Formulas Sheet').all();\nlet ingredients = [];\ntry { ingredients = $('Read Ingredients Sheet').all(); } catch(e) { ingredients = []; }\n\n// Handle flexible input: {search_by, search_term} OR shorthand {function:'X'}, {phase:'X'}, {name:'X'}\nlet searchBy = (input.search_by || '').toLowerCase();\nlet term = (input.search_term || '').toLowerCase();\n\nif (!searchBy || !term) {\n  if (input.function) { searchBy = 'function'; term = String(input.function).toLowerCase(); }\n  else if (input.phase) { searchBy = 'phase'; term = String(input.phase).toLowerCase(); }\n  else if (input.ingredient_name || input.name) { searchBy = 'name'; term = String(input.ingredient_name || input.name).toLowerCase(); }\n  else if (input.query) { searchBy = 'name'; term = String(input.query).toLowerCase(); }\n  else { searchBy = searchBy || 'name'; }\n}\n\nif (!term) {\n  return [{ json: { result: 'Please provide a search term. Use search_by (function/phase/name) and search_term, or provide function/phase/name directly.' } }];\n}\n\nconst formulaMap = {};\nfor (const f of formulas) {\n  formulaMap[f.json.FormulaID] = f.json.Name;\n}\n\nlet matches;\nif (searchBy === 'function') {\n  matches = ingredients.filter(r => (r.json.Function || '').toLowerCase().includes(term));\n} else if (searchBy === 'phase') {\n  matches = ingredients.filter(r => (r.json.Phase || '').toLowerCase().includes(term));\n} else {\n  matches = ingredients.filter(r =>\n    (r.json.IngredientName || '').toLowerCase().includes(term) ||\n    (r.json.INCIName || '').toLowerCase().includes(term)\n  );\n}\n\nif (matches.length === 0) {\n  return [{ json: { result: `No ingredients found matching ${searchBy}: \"${term}\".` } }];\n}\n\nconst lines = matches.map(r => {\n  const i = r.json;\n  const formulaName = formulaMap[i.FormulaID] || 'Unknown Formula';\n  return `${i.IngredientName} (${i.INCIName || '-'}) - ${i.Percentage}% in \"${formulaName}\" | Phase: ${i.Phase} | Function: ${i.Function}`;\n});\n\nreturn [{ json: { result: `Found ${matches.length} match(es) for ${searchBy} \"${term}\":\\n` + lines.join('\\n') } }];"
+      },
+      "id": "si-0001-0000-0000-000000000004",
+      "name": "Search and Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        970,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Read Formulas Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Ingredients Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Formulas Sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait For Both Reads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Ingredients Sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait For Both Reads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait For Both Reads": {
+      "main": [
+        [
+          {
+            "node": "Search and Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

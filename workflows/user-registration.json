@@ -1,0 +1,179 @@
+{
+  "name": "User Registration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "register-user",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "reg-0001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "a1b2c3d4-e5f6-7890-abcd-register00001"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst headers = $input.first().json.headers || {};\n\n// Admin auth check\nconst adminToken = headers['x-admin-token'] || '';\nif (adminToken !== 'b9cd461c9cd9a90ee16c3dd40f8637e3') {\n  return [{ json: { error: 'Unauthorized', success: false } }];\n}\n\nconst email = (body.email || '').trim().toLowerCase();\nconst plan = body.plan || 'basic';\nconst projectType = body.projectType || 'cosmetic';\n\nif (!email) {\n  return [{ json: { error: 'Email is required', success: false } }];\n}\n\n// Generate unique auth token for the new user\nconst chars = 'abcdef0123456789';\nlet token = '';\nfor (let i = 0; i < 32; i++) {\n  token += chars[Math.floor(Math.random() * chars.length)];\n}\n\nreturn [{ json: {\n  email,\n  plan,\n  projectType,\n  authToken: token,\n  valid: true\n}}];"
+      },
+      "id": "reg-0002",
+      "name": "Validate & Generate Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "valid-check",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "reg-0003",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requests: [{ addSheet: { properties: { title: 'User_' + $json.authToken.substring(0, 8) } } }] }) }}",
+        "options": {}
+      },
+      "id": "reg-0004",
+      "name": "Create User Sheet Tab",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { title: ($json.projectType === 'project' ? 'Project Tracker' : 'Cosmetic Formulation Tracker') + ' - ' + $json.email }, sheets: $json.projectType === 'project' ? [{ properties: { title: 'Tasks' } }, { properties: { title: 'Projects' } }] : [{ properties: { title: 'Formulas' } }, { properties: { title: 'Ingredients' } }, { properties: { title: 'FormulaVersions' } }] }) }}",
+        "options": {}
+      },
+      "id": "reg-0005",
+      "name": "Create User Spreadsheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const regData = $('Validate & Generate Token').first().json;\nconst spreadsheet = $input.first().json;\nconst spreadsheetId = spreadsheet.spreadsheetId;\n\n// Build header rows based on project type\nlet headerRequests = [];\n\nif (regData.projectType === 'project') {\n  headerRequests = [\n    {\n      range: 'Tasks!A1:K1',\n      values: [['TaskID', 'ProjectName', 'TaskName', 'Description', 'Status', 'Priority', 'DueDate', 'AssignedTo', 'CreatedAt', 'UpdatedAt', 'Notes']]\n    },\n    {\n      range: 'Projects!A1:E1',\n      values: [['ProjectID', 'ProjectName', 'Description', 'Status', 'CreatedAt']]\n    }\n  ];\n} else {\n  headerRequests = [\n    {\n      range: 'Formulas!A1:J1',\n      values: [['FormulaID', 'Name', 'Category', 'Description', 'TargetPH', 'TotalPct', 'Status', 'CreatedAt', 'UpdatedAt', 'Notes']]\n    },\n    {\n      range: 'Ingredients!A1:I1',\n      values: [['IngredientID', 'FormulaID', 'IngredientName', 'INCIName', 'Percentage', 'Phase', 'Function', 'MaxPct', 'SupplierNotes']]\n    },\n    {\n      range: 'FormulaVersions!A1:G1',\n      values: [['VersionID', 'FormulaID', 'VersionNumber', 'ChangeDescription', 'ChangedBy', 'CreatedAt', 'Snapshot']]\n    }\n  ];\n}\n\nreturn [{ json: {\n  spreadsheetId,\n  headerRequests,\n  email: regData.email,\n  authToken: regData.authToken,\n  plan: regData.plan,\n  projectType: regData.projectType\n}}];"
+      },
+      "id": "reg-0006",
+      "name": "Prepare Headers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + '/values:batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ valueInputOption: 'RAW', data: $json.headerRequests }) }}",
+        "options": {}
+      },
+      "id": "reg-0007",
+      "name": "Add Sheet Headers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI/values/Users!A:I:append?valueInputOption=RAW",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ values: [[ $('Prepare Headers').first().json.authToken, $('Prepare Headers').first().json.email, $('Prepare Headers').first().json.plan, $('Prepare Headers').first().json.spreadsheetId, $('Prepare Headers').first().json.projectType, '0', '100', new Date().toISOString().split('T')[0], 'TRUE' ]] }) }}",
+        "options": {}
+      },
+      "id": "reg-0008",
+      "name": "Add User to Registry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "qpV1Z8tc0XDqAdRH", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "result", "name": "result", "value": "={{ JSON.stringify({ success: true, authToken: $('Prepare Headers').first().json.authToken, spreadsheetId: $('Prepare Headers').first().json.spreadsheetId, email: $('Prepare Headers').first().json.email, plan: $('Prepare Headers').first().json.plan, projectType: $('Prepare Headers').first().json.projectType, message: 'User registered successfully. Use the authToken as X-Auth-Token header.' }) }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "reg-0009",
+      "name": "Return Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "error-result", "name": "result", "value": "={{ JSON.stringify({ success: false, error: $json.error || 'Registration failed' }) }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "reg-0010",
+      "name": "Return Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 500]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Validate & Generate Token", "type": "main", "index": 0 }]] },
+    "Validate & Generate Token": { "main": [[{ "node": "Valid?", "type": "main", "index": 0 }]] },
+    "Valid?": {
+      "main": [
+        [{ "node": "Create User Spreadsheet", "type": "main", "index": 0 }],
+        [{ "node": "Return Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create User Spreadsheet": { "main": [[{ "node": "Prepare Headers", "type": "main", "index": 0 }]] },
+    "Prepare Headers": { "main": [[{ "node": "Add Sheet Headers", "type": "main", "index": 0 }]] },
+    "Add Sheet Headers": { "main": [[{ "node": "Add User to Registry", "type": "main", "index": 0 }]] },
+    "Add User to Registry": { "main": [[{ "node": "Return Success", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
