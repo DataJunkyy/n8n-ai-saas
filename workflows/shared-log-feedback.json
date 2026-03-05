@@ -1,0 +1,277 @@
+{
+  "name": "Shared: Log Feedback",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "log-feedback",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "slf-0001-0000-0000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "f2b3c4d5-6e7f-8a9b-0c1d-2e3f4a5b6c7d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-fid",
+              "name": "FeedbackID",
+              "value": "={{ $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "a-iid",
+              "name": "InteractionID",
+              "value": "={{ $json.body.interaction_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-proj",
+              "name": "ProjectName",
+              "value": "={{ $json.body.project || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-rate",
+              "name": "Rating",
+              "value": "={{ $json.body.rating || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-corr",
+              "name": "Correction",
+              "value": "={{ $json.body.correction || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-cat",
+              "name": "Category",
+              "value": "={{ $json.body.category || 'auto' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-ts",
+              "name": "Timestamp",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "slf-0001-0000-0000-000000000002",
+      "name": "Build Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        580,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1IDVVby9y7ccYwi5NRjXCx5HRjao2NJ3KNUKDrv-Y3bI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Feedback",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "FeedbackID",
+              "displayName": "FeedbackID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "InteractionID",
+              "displayName": "InteractionID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ProjectName",
+              "displayName": "ProjectName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rating",
+              "displayName": "Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Correction",
+              "displayName": "Correction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "slf-0001-0000-0000-000000000003",
+      "name": "Append to Feedback",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        800,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ok",
+              "name": "status",
+              "value": "ok",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "slf-0001-0000-0000-000000000004",
+      "name": "Return OK",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1020,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const token = 'b9cd461c9cd9a90ee16c3dd40f8637e3';\nconst authHeader = $json.headers['x-auth-token'] || '';\nif (authHeader !== token) { return []; }\nreturn $input.all();"
+      },
+      "id": "slf-0001-0000-0000-000000000010",
+      "name": "Auth Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Auth Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Feedback": {
+      "main": [
+        [
+          {
+            "node": "Return OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth Check": {
+      "main": [
+        [
+          {
+            "node": "Build Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

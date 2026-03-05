@@ -1,0 +1,186 @@
+{
+  "name": "Tool: Get Formula Details",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "gfd-0001-0000-0000-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\nreturn [{ json: parsed }];"
+      },
+      "id": "gfd-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PROJECT_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Formulas",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "gfd-0001-0000-0000-000000000002",
+      "name": "Read Formulas Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        530,
+        200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PROJECT_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Ingredients",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "gfd-0001-0000-0000-000000000003",
+      "name": "Read Ingredients Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        530,
+        420
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "gfd-0001-0000-0000-000000000020",
+      "name": "Wait For Both Reads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        750,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const identifier = ($('Parse Input').first().json.formula_identifier || $('Parse Input').first().json.formula_name || '').trim();\nconst formulas = $('Read Formulas Sheet').all();\nlet ingredients = [];\ntry { ingredients = $('Read Ingredients Sheet').all(); } catch(e) { ingredients = []; }\n\nconst formula = formulas.find(r =>\n  r.json.FormulaID === identifier ||\n  String(r.json.FormulaID) === identifier ||\n  (r.json.Name || '').toLowerCase() === identifier.toLowerCase()\n);\n\nif (!formula) {\n  return [{ json: { result: `Formula not found: \"${identifier}\". Use list_formulas to see available formulas.` } }];\n}\n\nconst f = formula.json;\nconst formulaIngredients = ingredients.filter(r => String(r.json.FormulaID) === String(f.FormulaID));\n\nlet output = `=== ${f.Name} ===\\n`;\noutput += `Category: ${f.Category} | Status: ${f.Status} | Target pH: ${f.TargetPH || 'Not set'}\\n`;\noutput += `Total: ${f.TotalPct || '0'}% | Created: ${f.CreatedAt} | Updated: ${f.UpdatedAt}\\n`;\nif (f.Notes) output += `Notes: ${f.Notes}\\n`;\noutput += `\\n--- Ingredients (${formulaIngredients.length}) ---\\n`;\n\nif (formulaIngredients.length === 0) {\n  output += 'No ingredients added yet.\\n';\n} else {\n  const phases = {};\n  for (const ing of formulaIngredients) {\n    const phase = ing.json.Phase || 'Unassigned';\n    if (!phases[phase]) phases[phase] = [];\n    phases[phase].push(ing.json);\n  }\n  const phaseOrder = ['Water', 'Oil', 'Emulsifier', 'Active', 'Preservative', 'Fragrance', 'CoolDown', 'Unassigned'];\n  for (const phase of phaseOrder) {\n    if (!phases[phase]) continue;\n    output += `\\n[${phase} Phase]\\n`;\n    for (const ing of phases[phase]) {\n      output += `  ${ing.IngredientName} (${ing.INCIName || '-'}) - ${ing.Percentage}%`;\n      output += ` | Function: ${ing.Function || '-'}`;\n      if (ing.MaxPct) output += ` | Max: ${ing.MaxPct}%`;\n      output += '\\n';\n    }\n  }\n  const totalPct = formulaIngredients.reduce((sum, ing) => sum + parseFloat(ing.json.Percentage || 0), 0);\n  output += `\\nTotal: ${totalPct.toFixed(1)}%`;\n  if (Math.abs(totalPct - 100) > 0.1) {\n    output += ` *** WARNING: Total is not 100%! ***`;\n  }\n}\n\nreturn [{ json: { result: output } }];"
+      },
+      "id": "gfd-0001-0000-0000-000000000004",
+      "name": "Build Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        970,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Read Formulas Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Ingredients Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Formulas Sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait For Both Reads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Ingredients Sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait For Both Reads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait For Both Reads": {
+      "main": [
+        [
+          {
+            "node": "Build Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

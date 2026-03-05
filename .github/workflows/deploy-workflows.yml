@@ -1,0 +1,113 @@
+name: Deploy n8n Workflows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workflows/**'
+  workflow_dispatch:
+
+env:
+  N8N_API_URL: ${{ secrets.N8N_API_URL }}
+  N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Detect changed workflows
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "files=$(ls workflows/*.json | tr '\n' ' ')" >> $GITHUB_OUTPUT
+            echo "Manual trigger — deploying all workflows"
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'workflows/*.json' || echo "")
+            echo "files=$CHANGED" >> $GITHUB_OUTPUT
+            echo "Changed files: $CHANGED"
+          fi
+
+      - name: Deploy changed workflows
+        if: steps.changed.outputs.files != ''
+        run: |
+          python3 -c "
+          import json, os, sys, urllib.request
+
+          api_url = os.environ['N8N_API_URL'].rstrip('/')
+          api_key = os.environ['N8N_API_KEY']
+
+          # Map of workflow file basenames to their live n8n IDs
+          WORKFLOW_IDS = {
+              'cosmetic-assistant-main.json': 'OWMMjqI1rSa4nPAG',
+              'project-assistant-main.json': 'PTln6pRFxXdzutSs',
+              'tool-create-formula.json': 'XzqRrVYprjCWlRVL',
+              'tool-list-formulas.json': '5gISs6mMKm6kFGQS',
+              'tool-get-formula-details.json': 'q9okaghwRhbat149',
+              'tool-manage-ingredient.json': '3zg7utWwqeSopdIt',
+              'tool-update-formula.json': 'XRlgUhzC4ARbHtvN',
+              'tool-search-ingredients.json': 'QEBeXFVt2RTMKI4U',
+              'tool-list-tasks.json': '4xaQjKujons3MWh6',
+              'tool-manage-task.json': 'h29Xr3Uem0tbFuxT',
+              'tool-create-document.json': 'xTl4aCH8EQfUMnfF',
+              'tool-get-project-summary.json': '21EaXJbz7s7JJMA3',
+              'shared-log-interaction.json': 'HvpDRQVudIit6DZX',
+              'shared-log-feedback.json': 'dMNZniMfBrav5sl7',
+              'shared-learning-loop.json': 'BEiOsCo3bwVSQnGI',
+              'shared-monthly-reset.json': 'znMFanljkEgsstdz',
+              'cosmetic-chat-ui.json': 'XyqD0caTgjgpQa4P',
+              'project-assistant-chat-ui.json': 'LOvS3BK4D12oitzb',
+              'user-registration.json': 'oZZsFAeYA46yK9kZ',
+              'stripe-webhook-handler.json': 'he9rhHCvO2nWLyUZ',
+          }
+
+          files = '${{ steps.changed.outputs.files }}'.split()
+          deployed = 0
+          failed = 0
+
+          for filepath in files:
+              basename = os.path.basename(filepath)
+              wf_id = WORKFLOW_IDS.get(basename)
+
+              if not wf_id:
+                  print(f'SKIP {basename} — no workflow ID mapped')
+                  continue
+
+              if not os.path.exists(filepath):
+                  print(f'SKIP {filepath} — file not found')
+                  continue
+
+              with open(filepath, 'r') as f:
+                  wf = json.load(f)
+
+              payload = {
+                  'name': wf['name'],
+                  'nodes': wf['nodes'],
+                  'connections': wf['connections'],
+                  'settings': wf.get('settings', {}),
+              }
+
+              try:
+                  body = json.dumps(payload).encode()
+                  req = urllib.request.Request(
+                      f'{api_url}/workflows/{wf_id}',
+                      data=body, method='PUT'
+                  )
+                  req.add_header('X-N8N-API-KEY', api_key)
+                  req.add_header('Content-Type', 'application/json')
+                  resp = urllib.request.urlopen(req)
+                  print(f'OK {basename} -> {wf_id}')
+                  deployed += 1
+              except Exception as e:
+                  print(f'FAIL {basename}: {e}')
+                  failed += 1
+
+          print(f'\nDeployed: {deployed}, Failed: {failed}, Skipped: {len(files) - deployed - failed}')
+          if failed > 0:
+              sys.exit(1)
+          "

@@ -1,0 +1,87 @@
+{
+  "name": "Cosmetic Chat UI [DEV]",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "cosmetic-chat-dev",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cui-0001-0000-0000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "2ac69dd8-1afa-45ea-aa03-5c123d04fc32"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "cui-0001-0000-0000-000000000002",
+      "name": "Respond HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const PROJECT = 'cosmetic-formulator';\nconst TITLE = 'Cosmetic Formulator';\nconst WEBHOOK = 'https://princeadarkwah.app.n8n.cloud/webhook/cosmetic-formulator-dev';\nconst LOG_URL = 'https://princeadarkwah.app.n8n.cloud/webhook/log-interaction-dev';\nconst FB_URL = 'https://princeadarkwah.app.n8n.cloud/webhook/log-feedback-dev';\nconst AUTH = 'b9cd461c9cd9a90ee16c3dd40f8637e3';\nconst PLACEHOLDER = 'Ask about formulas...';\n\nconst html = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n<title>${TITLE}</title>\n<style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; height: 100dvh; display: flex; flex-direction: column; }\n  header { padding: 12px 16px; background: #1a1a2e; border-bottom: 1px solid #333; text-align: center; font-size: 18px; font-weight: 600; }\n  #chat { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }\n  .msg { max-width: 85%; padding: 10px 14px; border-radius: 16px; line-height: 1.45; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; }\n  .user { align-self: flex-end; background: #2563eb; color: #fff; border-bottom-right-radius: 4px; }\n  .bot { align-self: flex-start; background: #2a2a2a; border-bottom-left-radius: 4px; }\n  .typing { align-self: flex-start; background: #2a2a2a; border-radius: 16px; padding: 10px 18px; font-size: 15px; color: #888; }\n  .fb-row { align-self: flex-start; display: flex; gap: 6px; margin-top: -4px; }\n  .fb-btn { background: none; border: 1px solid #444; border-radius: 12px; padding: 4px 10px; color: #888; font-size: 13px; cursor: pointer; }\n  .fb-btn:hover { border-color: #2563eb; color: #ccc; }\n  .fb-btn.selected { border-color: #2563eb; color: #2563eb; }\n  .fb-input { display: none; align-self: flex-start; width: 85%; max-width: 85%; margin-top: -4px; }\n  .fb-input input { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 14px; outline: none; }\n  .fb-input input:focus { border-color: #2563eb; }\n  .trace-box { align-self: flex-start; max-width: 85%; margin-top: -4px; }\n  .trace-box summary { color: #666; font-size: 12px; cursor: pointer; padding: 4px 0; }\n  .trace-box summary:hover { color: #2563eb; }\n  .trace-text { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 8px 12px; margin-top: 4px; font-family: monospace; font-size: 12px; color: #aaa; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; }\n  form { display: flex; gap: 8px; padding: 10px 12px; background: #1a1a1a; border-top: 1px solid #333; }\n  input { flex: 1; padding: 12px 14px; border-radius: 24px; border: 1px solid #444; background: #222; color: #fff; font-size: 16px; outline: none; }\n  input:focus { border-color: #2563eb; }\n  button { padding: 12px 20px; border-radius: 24px; border: none; background: #2563eb; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }\n  button:disabled { opacity: 0.5; }\n</style>\n</head>\n<body>\n<header>${TITLE}</header>\n<div id=\"chat\"></div>\n<form id=\"form\">\n  <input id=\"input\" type=\"text\" placeholder=\"${PLACEHOLDER}\" autocomplete=\"off\" />\n  <button id=\"btn\" type=\"submit\">Send</button>\n</form>\n<script>\nconst PROJECT = '${PROJECT}';\nconst WEBHOOK = '${WEBHOOK}';\nconst LOG_URL = '${LOG_URL}';\nconst FB_URL = '${FB_URL}';\nconst AUTH = '${AUTH}';\nconst chat = document.getElementById('chat');\nconst form = document.getElementById('form');\nconst inp = document.getElementById('input');\nconst btn = document.getElementById('btn');\n\nfunction addMsg(text, cls) {\n  const d = document.createElement('div');\n  d.className = 'msg ' + cls;\n  d.textContent = text;\n  chat.appendChild(d);\n  chat.scrollTop = chat.scrollHeight;\n  return d;\n}\n\nfunction addFeedback(interactionId, userMsg, aiResp) {\n  const row = document.createElement('div');\n  row.className = 'fb-row';\n  const up = document.createElement('button');\n  up.className = 'fb-btn'; up.textContent = '\\u{1F44D}';\n  const down = document.createElement('button');\n  down.className = 'fb-btn'; down.textContent = '\\u{1F44E}';\n  const edit = document.createElement('button');\n  edit.className = 'fb-btn'; edit.textContent = '\\u270F Correct';\n  row.appendChild(up); row.appendChild(down); row.appendChild(edit);\n  chat.appendChild(row);\n\n  const corrBox = document.createElement('div');\n  corrBox.className = 'fb-input';\n  const corrInp = document.createElement('input');\n  corrInp.placeholder = 'What should it have said?';\n  corrBox.appendChild(corrInp);\n  chat.appendChild(corrBox);\n  chat.scrollTop = chat.scrollHeight;\n\n  function sendFb(rating, correction) {\n    fetch(FB_URL, { method:'POST', headers:{'Content-Type':'application/json', 'X-Auth-Token': AUTH},\n      body: JSON.stringify({ interaction_id: interactionId, project: PROJECT, rating, correction, category:'auto' })\n    }).catch(()=>{});\n    up.classList.remove('selected'); down.classList.remove('selected');\n    if (rating >= 4) up.classList.add('selected');\n    else down.classList.add('selected');\n    up.disabled = true; down.disabled = true; edit.disabled = true;\n    corrBox.style.display = 'none';\n  }\n\n  up.onclick = () => sendFb(5, '');\n  down.onclick = () => { corrBox.style.display = 'block'; corrInp.focus(); chat.scrollTop = chat.scrollHeight; };\n  edit.onclick = () => { corrBox.style.display = 'block'; corrInp.focus(); chat.scrollTop = chat.scrollHeight; };\n  corrInp.addEventListener('keydown', (e) => {\n    if (e.key === 'Enter' && corrInp.value.trim()) {\n      sendFb(down.classList.contains('selected') ? 1 : 3, corrInp.value.trim());\n    }\n  });\n}\n\nfunction addTrace(trace) {\n  const details = document.createElement(\"details\");\n  details.className = \"trace-box\";\n  const summary = document.createElement(\"summary\");\n  summary.textContent = \"Show reasoning\";\n  details.appendChild(summary);\n  const pre = document.createElement(\"pre\");\n  pre.className = \"trace-text\";\n  pre.textContent = trace;\n  details.appendChild(pre);\n  chat.appendChild(details);\n  chat.scrollTop = chat.scrollHeight;\n}\n\nform.addEventListener('submit', async (e) => {\n  e.preventDefault();\n  const msg = inp.value.trim();\n  if (!msg) return;\n  addMsg(msg, 'user');\n  inp.value = '';\n  btn.disabled = true;\n  const dot = document.createElement('div');\n  dot.className = 'typing'; dot.textContent = 'Thinking...';\n  chat.appendChild(dot); chat.scrollTop = chat.scrollHeight;\n  const t0 = Date.now();\n  try {\n    const res = await fetch(WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json', 'X-Auth-Token': AUTH}, body: JSON.stringify({ message: msg }) });\n    const raw = await res.text();\n    const elapsed = Date.now() - t0;\n    let text = raw, trace = '', toolsUsed = '';\n    try { const d = JSON.parse(raw); text = d.output || raw; trace = d.decisionTrace || ''; toolsUsed = d.toolsUsed || ''; } catch(e) {}\n    dot.remove();\n    addMsg(text, 'bot');\n    if (trace && trace \\!== 'No tools were called for this response.') { addTrace(trace); }\n    const iid = Date.now().toString();\n    addFeedback(iid, msg, text);\n    fetch(LOG_URL, { method:'POST', headers:{'Content-Type':'application/json', 'X-Auth-Token': AUTH},\n      body: JSON.stringify({ interaction_id: iid, project: PROJECT, user_message: msg, ai_response: text, tools_used: toolsUsed, decision_trace: trace, response_time: elapsed })\n    }).catch(()=>{});\n  } catch (err) {\n    dot.remove();\n    addMsg('Error: ' + err.message, 'bot');\n  }\n  btn.disabled = false;\n  inp.focus();\n});\n</script>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];"
+      },
+      "id": "cui-0001-0000-0000-000000000003",
+      "name": "Build HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build HTML": {
+      "main": [
+        [
+          {
+            "node": "Respond HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

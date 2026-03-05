@@ -1,0 +1,115 @@
+{
+  "name": "Tool: List Formulas",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "lf-0001-0000-0000-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\nreturn [{ json: parsed }];"
+      },
+      "id": "lf-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Parse Input').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Formulas",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "lf-0001-0000-0000-000000000002",
+      "name": "Read Formulas Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        530,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const trigger = $('Parse Input').first().json;\nconst categoryFilter = (trigger.category || '').trim().toLowerCase();\nconst statusFilter = (trigger.status || '').trim().toLowerCase();\nconst rows = $input.all();\n\nlet filtered = rows;\nif (categoryFilter) {\n  filtered = filtered.filter(r => (r.json.Category || '').toLowerCase() === categoryFilter);\n}\nif (statusFilter) {\n  filtered = filtered.filter(r => (r.json.Status || '').toLowerCase() === statusFilter);\n}\n\nif (filtered.length === 0) {\n  return [{ json: { result: 'No formulas found' + (categoryFilter ? ' in category: ' + categoryFilter : '') + (statusFilter ? ' with status: ' + statusFilter : '') + '.' } }];\n}\n\nconst lines = filtered.map(r => {\n  const f = r.json;\n  return `[${f.Status}] ${f.Name} | Category: ${f.Category} | pH: ${f.TargetPH || '-'} | Total: ${f.TotalPct || '0'}% | ID: ${f.FormulaID}`;\n});\n\nreturn [{ json: { result: `Found ${filtered.length} formula(s):\\n` + lines.join('\\n') } }];"
+      },
+      "id": "lf-0001-0000-0000-000000000003",
+      "name": "Filter and Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Read Formulas Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Formulas Sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter and Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

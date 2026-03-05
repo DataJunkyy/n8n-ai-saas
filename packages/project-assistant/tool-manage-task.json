@@ -1,0 +1,325 @@
+{
+  "updatedAt": "2026-02-28T05:26:22.611Z",
+  "createdAt": "2026-02-27T22:08:57.577Z",
+  "id": "h29Xr3Uem0tbFuxT",
+  "name": "Tool: Manage Task",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-id",
+              "name": "ID",
+              "value": "={{ $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-project",
+              "name": "Project",
+              "value": "={{ $json.project || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-task",
+              "name": "Task",
+              "value": "={{ $json.task || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-status",
+              "name": "Status",
+              "value": "={{ $json.status || 'Todo' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-priority",
+              "name": "Priority",
+              "value": "={{ $json.priority || 'Medium' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-due",
+              "name": "Due Date",
+              "value": "={{ $json.due_date || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-notes",
+              "name": "Notes",
+              "value": "={{ $json.notes || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-created",
+              "name": "Created At",
+              "value": "={{ $now.toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000002",
+      "name": "Build Row Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PROJECT_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Tasks",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Project",
+              "displayName": "Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Task",
+              "displayName": "Task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Due Date",
+              "displayName": "Due Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000003",
+      "name": "Append to Tasks Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        688,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "confirm-result",
+              "name": "result",
+              "value": "={{ 'Task added: \"' + $('Workflow Input Trigger').first().json.task + '\" in project \"' + $('Workflow Input Trigger').first().json.project + '\" with status \"' + ($('Workflow Input Trigger').first().json.status || 'Todo') + '\".' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000004",
+      "name": "Return Confirmation",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Row Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Row Data": {
+      "main": [
+        [
+          {
+            "node": "Append to Tasks Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Tasks Sheet": {
+      "main": [
+        [
+          {
+            "node": "Return Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "1b36d52f-8e43-4bc7-a56e-0381a5f82542",
+  "activeVersionId": null,
+  "versionCounter": 5,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-27T22:08:57.579Z",
+      "createdAt": "2026-02-27T22:08:57.579Z",
+      "role": "workflow:owner",
+      "workflowId": "h29Xr3Uem0tbFuxT",
+      "projectId": "e4MnDLqsMYyMu9Kg",
+      "project": {
+        "updatedAt": "2025-04-04T04:41:55.416Z",
+        "createdAt": "2025-04-04T04:41:52.979Z",
+        "id": "e4MnDLqsMYyMu9Kg",
+        "name": "PRINCE ADARKWAH <padarkwah@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "projectRelations": [
+          {
+            "updatedAt": "2025-04-04T04:41:52.979Z",
+            "createdAt": "2025-04-04T04:41:52.979Z",
+            "userId": "d6667488-c5a1-46b3-bb76-7cfa36615eea",
+            "projectId": "e4MnDLqsMYyMu9Kg",
+            "user": {
+              "updatedAt": "2026-02-28T06:14:33.892Z",
+              "createdAt": "2025-04-04T04:41:51.125Z",
+              "id": "d6667488-c5a1-46b3-bb76-7cfa36615eea",
+              "email": "padarkwah@gmail.com",
+              "firstName": "PRINCE",
+              "lastName": "ADARKWAH",
+              "personalizationAnswers": null,
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "xTl4aCH8EQfUMnfF",
+                "userActivatedAt": 1772259271034
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-28",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

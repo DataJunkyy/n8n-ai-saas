@@ -1,0 +1,14 @@
+{
+  "project_name": "Cosmetic Formulator",
+  "prod_spreadsheet_id": "1cLv6rS_YjlTGVGrrpWFt7TMz4el1SOsYwlDmzwOwKXI",
+  "dev_spreadsheet_id": null,
+  "workflows": [
+    {"file": "workflows/tool-create-formula.json"},
+    {"file": "workflows/tool-list-formulas.json"},
+    {"file": "workflows/tool-get-formula-details.json"},
+    {"file": "workflows/tool-manage-ingredient.json"},
+    {"file": "workflows/tool-update-formula.json"},
+    {"file": "workflows/tool-search-ingredients.json"},
+    {"file": "workflows/cosmetic-chat-ui.json"}
+  ]
+}

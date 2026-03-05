@@ -1,0 +1,611 @@
+{
+  "name": "Cosmetic Formulation Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cosmetic-formulator",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "4d7045c0-064b-4641-962e-6a04a26cfafe"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHARED_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Learnings",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "read",
+        "returnAll": true
+      },
+      "id": "ca-0001-0000-0000-000000000020",
+      "name": "Read Learnings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookData = $('Webhook').first().json;\nconst message = webhookData.body.message;\n\nconst learnings = $input.all() || [];\nconst projectName = 'cosmetic-formulator';\n\nconst relevantLearnings = learnings.filter(l => {\n  const proj = (l.json.ProjectName || '').toLowerCase();\n  const active = String(l.json.Active || '').toUpperCase();\n  return active === 'TRUE' && (proj === projectName || proj === 'global');\n});\n\nlet learningsSection = '';\nif (relevantLearnings.length > 0) {\n  learningsSection = 'LEARNED BEHAVIORS (from user feedback — always follow these):\\n';\n  for (const l of relevantLearnings) {\n    learningsSection += '- ' + l.json.Learning + '\\n';\n  }\n}\n\nreturn [{ json: { message, learningsSection } }];"
+      },
+      "id": "ca-0001-0000-0000-000000000021",
+      "name": "Enrich Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "maxIterations": 10,
+          "returnIntermediateSteps": true,
+          "systemMessage": "=You are an expert Cosmetic Formulation Assistant. You help create, review, modify, and optimize cosmetic product formulations. You have deep knowledge of cosmetic chemistry, ingredient safety, and regulatory guidelines.\n\nCORE CAPABILITIES:\n- Create new cosmetic formulas (creams, serums, toners, cleansers, masks, lotions, oils, balms, mists)\n- Add ingredients with proper INCI names, percentages, phases, and functions\n- Review formulas for completeness, safety, and balance\n- Suggest ingredients for specific functions\n- Track formula versions and iterations\n\nFORMULATION KNOWLEDGE:\n\nPhase System:\n- Water Phase: Water, hydrosols, water-soluble actives, humectants (glycerin, hyaluronic acid). Heated to ~70-75C.\n- Oil Phase: Carrier oils, butters, oil-soluble actives, emollients. Heated to ~70-75C.\n- Emulsifier Phase: Emulsifying wax, cetearyl alcohol + polysorbate 60, olivem 1000. Added to oil phase or combined at matching temperature.\n- Active Phase: Heat-sensitive actives added below 40C (vitamin C, retinol, niacinamide, peptides).\n- Preservative Phase: Added below 40C. Essential for any formula containing water. Phenoxyethanol (max 1%), Optiphen (1-1.5%), Germall Plus (0.1-0.5%).\n- Fragrance Phase: Essential oils or fragrance oils, added at cool-down below 40C.\n- Cool-Down Phase: Any heat-sensitive ingredients added after the emulsion forms and cools.\n\nStandard Percentage Ranges:\n- Water/hydrosol: typically 60-80% of total formula (to 100% QS)\n- Oils and butters: 5-25% combined\n- Emulsifiers: 2-8% depending on oil phase size\n- Humectants (glycerin, etc.): 2-10%\n- Active ingredients: vary by ingredient, typically 0.5-5%\n- Preservatives: 0.5-1.5%\n- Essential oils/fragrance: 0.5-2% (max 1% for face products)\n- pH adjusters: as needed, typically <1%\n- Thickeners: 0.5-3%\n\npH Guidelines:\n- Skin (general): 4.5-6.5\n- Cleansers: 5.0-6.0\n- Toners: 5.0-5.5\n- Vitamin C serums: 2.5-3.5\n- AHA/BHA products: 3.0-4.0\n- Hair products: 4.5-5.5\n\nSafety Rules (ALWAYS enforce):\n- Total formula MUST equal 100%\n- Never exceed maximum usage rates for any ingredient\n- Every water-containing formula MUST have a preservative\n- Fragrance in leave-on face products: max 1%\n- Retinol: max 1% for OTC, typically 0.25-0.5%\n- Salicylic acid: max 2% OTC\n- Glycolic acid: max 10% OTC (home use)\n- Niacinamide: typically 2-5%, max 10%\n- Vitamin C (L-ascorbic acid): typically 10-20%, max 20%\n- Benzoyl peroxide: max 10% OTC\n- Hydroquinone: max 2% OTC (where permitted)\n\nWHEN CREATING A FORMULA:\n1. First use create_formula to register the formula\n2. Then add ingredients one at a time using manage_ingredient\n3. Add Water phase ingredients first, then Oil, Emulsifier, Active, Preservative, Fragrance\n4. Always include a preservative if the formula contains water\n5. Ensure percentages total 100% (use water as QS - quantity sufficient)\n6. After adding all ingredients, use update_formula to recalculate totals and set status\n\nWHEN REVIEWING A FORMULA:\n1. Use get_formula_details to see the full ingredient list\n2. Check: total = 100%, preservative present, no exceeded max percentages\n3. Check pH compatibility of ingredients\n4. Check phase assignments are correct\n5. Suggest improvements or flag issues\n\nRESPONSE STYLE:\n- Be concise but thorough\n- Always mention safety concerns prominently\n- When suggesting ingredients, provide INCI names\n- Format responses as plain text (no markdown) for smartphone compatibility\n- Use line breaks and simple formatting for readability\n\nAVAILABLE TOOLS:\n- create_formula: Create a new formula record\n- list_formulas: List all formulas, optionally filtered by category or status\n- get_formula_details: Get full formula with all ingredients grouped by phase\n- manage_ingredient: Add an ingredient to a formula\n- update_formula: Update formula metadata (status, pH, notes) and recalculate totals\n- search_ingredients: Search ingredients across all formulas by function, phase, or name\n\n{{ $json.learningsSection || '' }}"
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000002",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        632,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-sonnet-4-6"
+        },
+        "options": {
+          "maxTokensToSample": 4096
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000003",
+      "name": "Claude Sonnet",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        504,
+        528
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "cosmo-formulator",
+        "contextWindowLength": 12,
+        "sessionIdType": "customKey"
+      },
+      "id": "ca-0001-0000-0000-000000000004",
+      "name": "Session Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        616,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "name": "create_formula",
+        "description": "Create a new cosmetic formula in the tracker. Provide the formula name, category (Cream/Lotion/Serum/Toner/Cleanser/Mask/Oil/Balm/Mist/Other), description, target pH, and optional notes. Returns the new formula ID.",
+        "workflowId": {
+          "__rl": true,
+          "value": "XzqRrVYprjCWlRVL",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('name', 'The formula name, e.g. Hydrating Face Cream', 'string') }}"
+            },
+            "category": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('category', 'Formula category: Cream, Lotion, Serum, Toner, Cleanser, Mask, Oil, Balm, Mist, or Other', 'string') }}"
+            },
+            "description": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('description', 'What this formula is designed to do', 'string') }}"
+            },
+            "target_ph": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('target_ph', 'Target pH value or range, e.g. 5.5 or 4.5-5.5', 'string') }}"
+            },
+            "notes": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('notes', 'Any additional notes (optional)', 'string') }}"
+            }
+          }
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000005",
+      "name": "Tool: create_formula",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        760,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "name": "list_formulas",
+        "description": "List all cosmetic formulas from the tracker. Optionally filter by category (Cream/Serum/Toner/etc.) or status (Draft/Testing/Approved/Archived). Returns a formatted list.",
+        "workflowId": {
+          "__rl": true,
+          "value": "5gISs6mMKm6kFGQS",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "category": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('category', 'Optional category filter (Cream/Lotion/Serum/Toner/Cleanser/Mask/Oil/Balm/Mist/Other)', 'string') }}"
+            },
+            "status": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', 'Optional status filter (Draft/Testing/Approved/Archived)', 'string') }}"
+            }
+          }
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000006",
+      "name": "Tool: list_formulas",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        920,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_formula_details",
+        "description": "Get the full details of a specific cosmetic formula including all its ingredients grouped by phase. Provide the formula ID or exact formula name. Returns the formula metadata plus ingredient breakdown with percentages, phases, and functions.",
+        "workflowId": {
+          "__rl": true,
+          "value": "q9okaghwRhbat149",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "formula_identifier": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formula_identifier', 'The formula ID or exact name to look up', 'string') }}"
+            }
+          }
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000007",
+      "name": "Tool: get_formula_details",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "name": "manage_ingredient",
+        "description": "Add a new ingredient to a cosmetic formula. Provide the formula ID, ingredient name, INCI name, percentage, phase (Water/Oil/Emulsifier/Active/Preservative/Fragrance/CoolDown), function (Humectant/Emollient/Thickener/Preservative/Active/Surfactant/Emulsifier/Solvent/Antioxidant/pH Adjuster/Fragrance/Colorant), optional max usage percentage, and optional supplier notes.",
+        "workflowId": {
+          "__rl": true,
+          "value": "3zg7utWwqeSopdIt",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "formula_id": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formula_id', 'The formula ID to add the ingredient to', 'string') }}"
+            },
+            "ingredient_name": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ingredient_name', 'Common name of the ingredient', 'string') }}"
+            },
+            "inci_name": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('inci_name', 'INCI nomenclature name', 'string') }}"
+            },
+            "percentage": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('percentage', 'Weight percentage, e.g. 5.0', 'string') }}"
+            },
+            "phase": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('phase', 'Formulation phase: Water, Oil, Emulsifier, Active, Preservative, Fragrance, or CoolDown', 'string') }}"
+            },
+            "function": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('function', 'Ingredient function: Humectant, Emollient, Thickener, Preservative, Active, Surfactant, Emulsifier, Solvent, Antioxidant, pH Adjuster, Fragrance, or Colorant', 'string') }}"
+            },
+            "max_pct": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('max_pct', 'Maximum recommended usage percentage (optional)', 'string') }}"
+            },
+            "supplier_notes": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('supplier_notes', 'Supplier info and notes (optional)', 'string') }}"
+            }
+          }
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000008",
+      "name": "Tool: manage_ingredient",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "name": "update_formula",
+        "description": "Update an existing formula's metadata. Can change the status (Draft/Testing/Approved/Archived), target pH, notes, name, category, or description. Also recalculates the total ingredient percentage. Provide the formula ID and the field to update with its new value.",
+        "workflowId": {
+          "__rl": true,
+          "value": "XRlgUhzC4ARbHtvN",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "formula_id": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('formula_id', 'The formula ID to update', 'string') }}"
+            },
+            "field": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('field', 'Which field to update: Status, TargetPH, Notes, Name, Category, or Description', 'string') }}"
+            },
+            "value": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('value', 'The new value for the field', 'string') }}"
+            }
+          }
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000009",
+      "name": "Tool: update_formula",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "name": "search_ingredients",
+        "description": "Search for ingredients across all formulas by function (Humectant/Emollient/Thickener/etc.), phase (Water/Oil/Emulsifier/Active/Preservative/Fragrance/CoolDown), or name. Returns matching ingredients with their formula name, percentage, and details.",
+        "workflowId": {
+          "__rl": true,
+          "value": "QEBeXFVt2RTMKI4U",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "search_by": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('search_by', 'What to search by: function, phase, or name', 'string') }}"
+            },
+            "search_term": {
+              "__rl": false,
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('search_term', 'The search term to match', 'string') }}"
+            }
+          }
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000010",
+      "name": "Tool: search_ingredients",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $json.output || '';\nconst steps = $json.intermediateSteps || [];\n\nlet toolsUsed = [];\nlet traceLines = [];\n\nfor (let i = 0; i < steps.length; i++) {\n  const step = steps[i];\n  const action = step.action || {};\n  const toolName = action.tool || 'unknown';\n  const toolInput = action.toolInput || {};\n  const observation = (step.observation || '').substring(0, 500);\n  const reasoning = (action.log || '').trim();\n\n  toolsUsed.push(toolName);\n  traceLines.push('Step ' + (i + 1) + ': Called ' + toolName);\n  if (reasoning) traceLines.push('  Reasoning: ' + reasoning.substring(0, 200));\n  const inputStr = typeof toolInput === 'string'\n    ? toolInput\n    : Object.entries(toolInput).map(([k,v]) => k + '=' + v).join(', ');\n  if (inputStr) traceLines.push('  Input: ' + inputStr);\n  traceLines.push('  Result: ' + observation);\n  traceLines.push('');\n}\n\nconst decisionTrace = traceLines.length > 0\n  ? traceLines.join('\\n')\n  : 'No tools were called for this response.';\nconst toolsList = [...new Set(toolsUsed)].join(', ');\n\nconst responseBody = JSON.stringify({ output, decisionTrace, toolsUsed: toolsList });\n\nreturn [{ json: { output, decisionTrace, toolsUsed: toolsList, responseBody } }];"
+      },
+      "id": "ca-0001-0000-0000-000000000030",
+      "name": "Format Decision Trace",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        888,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.responseBody }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000011",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "auth-check",
+              "leftValue": "={{ $json.headers[\"x-auth-token\"] }}",
+              "rightValue": "YOUR_AUTH_TOKEN",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000040",
+      "name": "Auth Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        300,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Unauthorized",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "ca-0001-0000-0000-000000000041",
+      "name": "Respond 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        460,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Auth Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Learnings": {
+      "main": [
+        [
+          {
+            "node": "Enrich Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Decision Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Decision Trace": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Sonnet": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Session Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: create_formula": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: list_formulas": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: get_formula_details": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: manage_ingredient": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: update_formula": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: search_ingredients": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth Check": {
+      "main": [
+        [
+          {
+            "node": "Read Learnings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

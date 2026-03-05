@@ -1,0 +1,295 @@
+{
+  "name": "Tool: Manage Ingredient [DEV]",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "mi-0001-0000-0000-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\nreturn [{ json: parsed }];"
+      },
+      "id": "mi-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-ing-id",
+              "name": "IngredientID",
+              "value": "={{ $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-formula-id",
+              "name": "FormulaID",
+              "value": "={{ $json.formula_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-ing-name",
+              "name": "IngredientName",
+              "value": "={{ $json.ingredient_name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-inci",
+              "name": "INCIName",
+              "value": "={{ $json.inci_name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-pct",
+              "name": "Percentage",
+              "value": "={{ $json.percentage || '0' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-phase",
+              "name": "Phase",
+              "value": "={{ $json.phase || 'Unassigned' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-function",
+              "name": "Function",
+              "value": "={{ $json.function || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-max",
+              "name": "MaxPct",
+              "value": "={{ $json.max_pct || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-supplier",
+              "name": "SupplierNotes",
+              "value": "={{ $json.supplier_notes || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "mi-0001-0000-0000-000000000002",
+      "name": "Build Ingredient Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        530,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1cLv6rS_YjlTGVGrrpWFt7TMz4el1SOsYwlDmzwOwKXI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Ingredients",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "IngredientID",
+              "displayName": "IngredientID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FormulaID",
+              "displayName": "FormulaID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "IngredientName",
+              "displayName": "IngredientName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INCIName",
+              "displayName": "INCIName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Percentage",
+              "displayName": "Percentage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phase",
+              "displayName": "Phase",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Function",
+              "displayName": "Function",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "MaxPct",
+              "displayName": "MaxPct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "SupplierNotes",
+              "displayName": "SupplierNotes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "mi-0001-0000-0000-000000000003",
+      "name": "Append to Ingredients Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        750,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Parse Input').first().json;\nlet result = `Ingredient added: \"${input.ingredient_name}\" at ${input.percentage}% in ${input.phase} phase for formula ${input.formula_id}. Function: ${input.function || 'not specified'}.`;\n\nif (input.max_pct && parseFloat(input.percentage) > parseFloat(input.max_pct)) {\n  result += ` *** SAFETY WARNING: ${input.percentage}% exceeds recommended maximum of ${input.max_pct}%! ***`;\n}\n\nreturn [{ json: { result } }];"
+      },
+      "id": "mi-0001-0000-0000-000000000004",
+      "name": "Safety Check and Confirm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        970,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Build Ingredient Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Ingredient Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Ingredients Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Ingredients Sheet": {
+      "main": [
+        [
+          {
+            "node": "Safety Check and Confirm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

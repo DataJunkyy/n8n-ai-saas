@@ -1,0 +1,321 @@
+{
+  "name": "Tool: Create Formula",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "cf-0001-0000-0000-000000000001",
+      "name": "Workflow Input Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet parsed;\nif (typeof input.query === 'string') {\n  try { parsed = JSON.parse(input.query); } catch (e) { parsed = input; }\n} else if (input.query && typeof input.query === 'object') {\n  parsed = input.query;\n} else {\n  parsed = input;\n}\n// Normalize camelCase → snake_case aliases\nif (!parsed.target_ph) parsed.target_ph = parsed.targetPH || parsed.targetPh || '';\nreturn [{ json: parsed }];"
+      },
+      "id": "cf-0001-0000-0000-000000000010",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        350,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "assign-formula-id",
+              "name": "FormulaID",
+              "value": "={{ $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-name",
+              "name": "Name",
+              "value": "={{ $json.name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-category",
+              "name": "Category",
+              "value": "={{ $json.category || 'Other' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-description",
+              "name": "Description",
+              "value": "={{ $json.description || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-target-ph",
+              "name": "TargetPH",
+              "value": "={{ $json.target_ph || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-total-pct",
+              "name": "TotalPct",
+              "value": "0",
+              "type": "string"
+            },
+            {
+              "id": "assign-status",
+              "name": "Status",
+              "value": "Draft",
+              "type": "string"
+            },
+            {
+              "id": "assign-created",
+              "name": "CreatedAt",
+              "value": "={{ $now.toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-updated",
+              "name": "UpdatedAt",
+              "value": "={{ $now.toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            },
+            {
+              "id": "assign-notes",
+              "name": "Notes",
+              "value": "={{ $json.notes || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cf-0001-0000-0000-000000000002",
+      "name": "Build Row Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        530,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Parse Input').first().json.spreadsheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Formulas",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "FormulaID",
+              "displayName": "FormulaID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TargetPH",
+              "displayName": "TargetPH",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TotalPct",
+              "displayName": "TotalPct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CreatedAt",
+              "displayName": "CreatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "UpdatedAt",
+              "displayName": "UpdatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "cf-0001-0000-0000-000000000003",
+      "name": "Append to Formulas Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        750,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qpV1Z8tc0XDqAdRH",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "confirm-result",
+              "name": "result",
+              "value": "={{ 'Formula created: \"' + $('Parse Input').first().json.name + '\" (ID: ' + $('Build Row Data').first().json.FormulaID + ') in category ' + ($('Parse Input').first().json.category || 'Other') + '. Status: Draft. Target pH: ' + ($('Parse Input').first().json.target_ph || 'not set') + '.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cf-0001-0000-0000-000000000004",
+      "name": "Return Confirmation",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        970,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Workflow Input Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Build Row Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Row Data": {
+      "main": [
+        [
+          {
+            "node": "Append to Formulas Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Formulas Sheet": {
+      "main": [
+        [
+          {
+            "node": "Return Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}
